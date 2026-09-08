@@ -1,0 +1,31 @@
+import { sql } from 'drizzle-orm'
+import type { Queryable } from '../../../app/types.js'
+import type { EffectiveMatch } from '../../../domain/match/types.js'
+
+type RawRow = {
+  id: string
+  sequence: number
+  home_player_id: string
+  away_player_id: string
+  home_score: number
+  away_score: number
+  is_void: boolean
+}
+
+/** Reads the match_effective view (docs/DATABASE.md#views) — the current truth of every match. */
+export async function allEffectiveMatches(db: Queryable): Promise<EffectiveMatch[]> {
+  const rows = await db.execute<RawRow>(sql`
+    select id, sequence, home_player_id, away_player_id, home_score, away_score, is_void
+    from match_effective
+    order by sequence
+  `)
+  return rows.map((row) => ({
+    id: row.id,
+    sequence: row.sequence,
+    homePlayerId: row.home_player_id as EffectiveMatch['homePlayerId'],
+    awayPlayerId: row.away_player_id as EffectiveMatch['awayPlayerId'],
+    homeScore: row.home_score,
+    awayScore: row.away_score,
+    isVoid: row.is_void,
+  }))
+}
