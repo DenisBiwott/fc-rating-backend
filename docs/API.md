@@ -29,6 +29,11 @@ the endpoint returns **200 with the original result**, not a 409 or 422 — a re
 a dropped response must be indistinguishable from a successful first attempt. This is what makes
 "tap Confirm again after a flaky connection" safe on a phone.
 
+On a retried `id`, `rankChanges` comes back empty rather than reconstructed — the schema doesn't
+persist historical leaderboard position, so a retry can't know what the ranks _were_ at record
+time versus now. `match` and `outcome` (ratings, deltas, `upset`) are exact either way; only the
+"your rank changed" fanfare is skipped on a retry.
+
 ## The response shape the UI cares about most
 
 ```ts
