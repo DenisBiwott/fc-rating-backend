@@ -1,8 +1,11 @@
 # Database
 
-PostgreSQL 16. Drizzle owns the schema file, but the constraints below are hand-written raw SQL in
-the migration — Drizzle's schema DSL can't express all of them (partial unique indexes, `CHECK`
-constraints with cross-column logic), and that's fine as long as the migration has them.
+PostgreSQL 16. Drizzle's schema builder (`src/infra/db/schema.ts`) expresses the full schema,
+including every `CHECK` constraint and both partial unique indexes (`sessions_one_open`,
+`rating_configs_one_active`) — no hand-written SQL needed for those. The one exception is the two
+derived views (`match_effective`, `leaderboard`): views with `LATERAL` joins and `FILTER` clauses
+are outside what Drizzle's builder can express, so they're hand-written in a custom migration
+(`src/infra/db/migrations/0001_views.sql`).
 
 ## Tables
 
@@ -28,8 +31,9 @@ constraints with cross-column logic), and that's fine as long as the migration h
   `actual_score`, `delta`, `games_played_after`. Indexed on
   `(config_id, player_id, match_sequence desc)` for "latest snapshot per player" lookups.
 
-Full column list and constraint SQL: see the migration files once they exist, or the design doc
-§4 (`../fc-rating-platform-design.md`) for the authoritative DDL this schema was built from.
+Full column list and constraint SQL: `src/infra/db/schema.ts` (generated migration:
+`src/infra/db/migrations/0000_*.sql`), or the design doc §4 (`../fc-rating-platform-design.md`)
+for the original DDL this schema was built from.
 
 ## Views (not tables)
 

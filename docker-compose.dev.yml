@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fc_rating
+      POSTGRES_PASSWORD: fc_rating
+      POSTGRES_DB: fc_rating
+    ports:
+      - '5432:5432'
+    volumes:
+      - fc_rating_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U fc_rating -d fc_rating']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  fc_rating_postgres_data:
