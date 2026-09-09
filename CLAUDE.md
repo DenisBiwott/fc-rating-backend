@@ -33,6 +33,20 @@ the frontend's dev origin failed outright, the cookie never set — fixed by reg
 `lastPlayedAt` (`lastPlayedAtByPlayer` in `src/infra/db/queries/match-effective.ts`, a
 `MAX(played_at)` across `match_effective`, one new query) — both added for the frontend's
 player-profile/roster screens (`fc-rating-frontend/CLAUDE.md`'s Phase 4). 115 tests pass (was 106).
+**Decided 2026-09-10, not yet built:** viewing (every GET route — leaderboard, players, profiles,
+matches, sessions) becomes public, no login required; mutations stay admin-gated (today
+"admin does everything" is only true by accident — it's the sole account that can exist, since
+there's no route to provision `recorder`/`viewer` accounts). `requireRole()`'s ordinal hierarchy
+(`viewer:0 < recorder:1 < admin:2`, `src/http/plugins/auth.ts`) already means admin satisfies
+every check, so only the `requireRole('viewer')` preHandlers on GET routes need to go — nothing
+else about the role system changes, `recorder` stays in the type system unused rather than
+collapsed away. Whether `GET /rating-configs` goes public too (vs. staying admin-gated as
+config/tuning data, not player data) is still open. Also decided: 2c player creation ships
+against the already-supported `POST /players` (its rating-override control stays dropped — no
+per-player rating concept, ratings are derived); 2d player delete ships, gated to players with
+zero matches only; 2e void-match gets a real dry-run preview (a new capability — `voidMatch()`
+always commits today, no rollback-only path exists).
+
 Build order lives in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The
 full product/
 data/API design lives in `../fc-rating-platform-design.md` (one directory up, outside this repo —
