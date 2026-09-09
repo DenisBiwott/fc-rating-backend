@@ -3,7 +3,9 @@ import Fastify, { type FastifyInstance, type FastifyServerOptions } from 'fastif
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod'
 import type { Deps } from '../app/types.js'
 import type { Config } from '../config.js'
+import { registerAuthDecorator } from './plugins/auth.js'
 import { registerErrorHandler } from './plugins/error-handler.js'
+import { registerAuthRoutes } from './routes/auth.js'
 import { registerHealthRoutes } from './routes/health.js'
 
 function loggerOptions(
@@ -27,9 +29,11 @@ export function buildApp(deps: Deps, config: Config): FastifyInstance {
   app.setSerializerCompiler(serializerCompiler)
 
   void app.register(cookie, { secret: config.COOKIE_SECRET })
+  registerAuthDecorator(app)
 
   registerErrorHandler(app)
   registerHealthRoutes(app, deps)
+  registerAuthRoutes(app, deps)
 
   return app
 }
