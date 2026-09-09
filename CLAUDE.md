@@ -50,12 +50,14 @@ implementation. Also found and fixed: `@fastify/cors` defaults `methods` to `GET
 — PATCH/DELETE 405'd at the browser's preflight, latent since every prior cross-origin
 verification only exercised GET/POST; now explicit
 (`methods: ['GET','POST','PATCH','DELETE']`, `src/http/build-app.ts`). 128 tests pass (was 115).
-**Still open, not yet built: the public-viewing access-model change** — every GET route becomes
-public, mutations stay admin-gated; `requireRole()`'s ordinal hierarchy already means admin
-satisfies every check, so only the `requireRole('viewer')` preHandlers on GET routes need to go.
-Denis confirmed `GET /rating-configs` stays admin-gated (config/tuning data, not player data) —
-already true today, all 4 of its routes are `admin`-only, so no code change needed there either
-way.
+**Public-viewing access model shipped 2026-09-10.** Dropped `requireRole('viewer')` (and the
+now-inapplicable `security: sessionCookie` schema entries) from every GET route in
+`leaderboard.ts`/`players.ts`/`matches.ts`/`sessions.ts` — leaderboard, players, profiles, rating
+history, player matches, and match/session listings are all readable with no session. Every
+mutation route is exactly as gated as before; `GET /matches/:id/void-preview` and every
+`GET /rating-configs` route stay admin-gated deliberately (part of the admin workflow / tuning
+data, not a public read) — new tests lock in both exceptions alongside the newly-public routes.
+136 tests pass (was 115).
 
 Build order lives in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The
 full product/
