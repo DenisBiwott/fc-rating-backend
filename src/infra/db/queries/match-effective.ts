@@ -46,3 +46,29 @@ export async function effectiveMatchById(
   const row = rows[0]
   return row === undefined ? undefined : toEffectiveMatch(row)
 }
+
+export async function effectiveMatchesForPlayer(
+  db: Queryable,
+  playerId: string,
+): Promise<EffectiveMatch[]> {
+  const rows = await db.execute<RawRow>(sql`
+    select id, sequence, home_player_id, away_player_id, home_score, away_score, is_void
+    from match_effective
+    where (home_player_id = ${playerId} or away_player_id = ${playerId}) and not is_void
+    order by sequence
+  `)
+  return rows.map(toEffectiveMatch)
+}
+
+export async function effectiveMatchesForSession(
+  db: Queryable,
+  sessionId: string,
+): Promise<EffectiveMatch[]> {
+  const rows = await db.execute<RawRow>(sql`
+    select id, sequence, home_player_id, away_player_id, home_score, away_score, is_void
+    from match_effective
+    where session_id = ${sessionId} and not is_void
+    order by sequence
+  `)
+  return rows.map(toEffectiveMatch)
+}

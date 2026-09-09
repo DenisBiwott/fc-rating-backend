@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import type { Queryable, Transaction } from '../../../app/types.js'
 import { matches, ratingSnapshots } from '../schema.js'
 
@@ -34,4 +34,16 @@ export async function snapshotsForMatch(
     .select()
     .from(ratingSnapshots)
     .where(and(eq(ratingSnapshots.configId, configId), eq(ratingSnapshots.matchId, matchId)))
+}
+
+export async function snapshotsForMatches(
+  db: Queryable,
+  configId: string,
+  matchIds: readonly string[],
+): Promise<SnapshotRow[]> {
+  if (matchIds.length === 0) return []
+  return db
+    .select()
+    .from(ratingSnapshots)
+    .where(and(eq(ratingSnapshots.configId, configId), inArray(ratingSnapshots.matchId, matchIds)))
 }

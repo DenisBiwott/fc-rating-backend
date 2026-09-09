@@ -9,7 +9,10 @@ select m.id, m.sequence,
        coalesce(a.new_away_player_id, m.away_player_id) as away_player_id,
        coalesce(a.new_home_score, m.home_score)         as home_score,
        coalesce(a.new_away_score, m.away_score)         as away_score,
-       (a.type = 'void')                                 as is_void,
+       -- coalesce is required: when there's no adjustment, a.type is null, and `null = 'void'`
+       -- evaluates to null (not false) — a bare `WHERE not is_void` would then silently exclude
+       -- every never-adjusted match, which is most of them.
+       coalesce(a.type = 'void', false)                   as is_void,
        m.played_at, m.session_id, m.recorded_by, m.recorded_at, m.decided_on_penalties
 from matches m
 left join lateral (

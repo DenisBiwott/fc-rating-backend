@@ -10,26 +10,28 @@ src/
     rating/          # Elo engine + property tests
     match/           # effective-match overlay, actualScore derivation
     leaderboard/     # rank computation, form, streaks — pure over arrays
-  app/               # use-cases: recordMatch, voidMatch, correctMatch, rebuildConfig,
-                     # openSession, closeSession, sessionSummary, playerProfile,
-                     # ratingHistory, leaderboard. Orchestrate db + domain in transactions.
-                     # No HTTP knowledge.
+  app/               # use-cases (one file per use-case) + a few shared helpers (validation,
+                     # outcome reconstruction, the replay-and-persist primitive void/correct/
+                     # rebuild all share). Explicit deps: { db, clock, ids, logger }. No HTTP
+                     # knowledge. Current use-case list is authoritative in the code, not here —
+                     # see src/app/*.ts.
   infra/
     db/              # drizzle schema, migrations, query modules (one file per aggregate)
-    auth/            # password hashing, cookie signing
-  http/
-    routes/          # fastify plugins, one per resource; zod schemas here feed OpenAPI
-    problem.ts       # RFC 9457 error mapping
-  config.ts          # env parsing (zod)
-  server.ts
-test/
-  unit/              # domain
-  integration/       # app + db against real Postgres
-  api/               # fastify inject against the full server
+    auth/            # password hashing
+    ids.ts, clock.ts, logger.ts, errors.ts   # injectable deps + Postgres error translation
+  http/              # not started — Fastify routes, Zod schemas, RFC 9457 errors (step 5)
 scripts/
-  generate-openapi.ts
-  seed.ts
+  migrate.ts, seed.ts, reset-db.ts
+  generate-openapi.ts   # not started — step 5/6
+test/
+  unit/              # domain, plus the lint-boundary behavioral test
+  integration/       # app + db, one fresh Postgres *database* per test file (see helpers/test-db.ts)
+  api/                # not started — fastify inject against the full server (step 5/8)
 ```
+
+The layout above is the stable shape (what each top-level folder is _for_); read the directory
+itself for the current, exact file list — a hand-maintained enumeration here would just go stale
+again the moment the next use-case or query module is added.
 
 Everything that isn't `domain/` may depend on anything. `domain/` may depend on nothing outside
 itself — no Fastify, no Drizzle, no `node:*`, no `Date.now()`, no `Math.random()`. This is Clean
@@ -60,8 +62,11 @@ time or a new ID, it asks for it as a parameter; tests inject deterministic fake
 ## Derive-by-replay
 
 The core design bet of this codebase: **ratings are never stored as truth, only recomputed.**
-`rating_snapshots` is a cache keyed by `(config_id, match_id, player_id)`; the leaderboard is a SQL
-view over its latest row per player. This removes an entire class of problems in one move —
+`rating_snapshots` is a cache keyed by `(config_id, match_id, player_id)`; the leaderboard the app
+exposes is derived fresh from its latest row per player on every read (see
+[docs/DATABASE.md#views-not-tables](DATABASE.md#views-not-tables) — there's a SQL `leaderboard`
+view too, but the app doesn't query it directly). This removes an entire class of problems in one
+move —
 there's no "corrected match, now the ratings are stale" bug, because a correction just triggers a
 replay under the same lock. See [docs/DATABASE.md](DATABASE.md) for the views.
 

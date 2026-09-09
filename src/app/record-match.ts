@@ -14,10 +14,10 @@ import {
   insertSnapshots,
   snapshotsForMatch,
   type MatchRow,
-  type SnapshotRow,
 } from '../infra/db/queries/matches.js'
 import { getActiveRatingConfig } from '../infra/db/queries/rating-configs.js'
 import { activePlayerRatings, latestSnapshotsFor } from '../infra/db/queries/ratings.js'
+import { outcomeFromSnapshotRows } from './reconstruct-outcome.js'
 import { toSnapshotRow } from './snapshot-mapper.js'
 import type { Deps, Queryable, Transaction } from './types.js'
 import { validateMatchShape } from './validation.js'
@@ -74,51 +74,6 @@ function toMatchDto(row: MatchRow): MatchDto {
   }
 }
 
-/**
- * Rebuilds a MatchOutcome from persisted snapshot rows — used on the idempotent-retry path, where
- * we return the original result rather than recomputing. wasProvisional/upset aren't stored
- * columns; both are cheap to derive from what is stored.
- */
-function outcomeFromRows(
-  matchRow: MatchRow,
-  snapshots: readonly SnapshotRow[],
-  provisionalGames: number,
-): MatchOutcome {
-  const byPlayer = new Map(snapshots.map((snapshot) => [snapshot.playerId, snapshot]))
-  const homeSnapshot = byPlayer.get(matchRow.homePlayerId)
-  const awaySnapshot = byPlayer.get(matchRow.awayPlayerId)
-  if (homeSnapshot === undefined || awaySnapshot === undefined) {
-    throw new Error(`Missing rating snapshot(s) for match ${matchRow.id}`)
-  }
-
-  const toParticipant = (playerId: string, snapshot: SnapshotRow): ParticipantOutcome => {
-    const before: RatingState = {
-      rating: snapshot.ratingBefore,
-      gamesPlayed: snapshot.gamesPlayedAfter - 1,
-    }
-    const after: RatingState = {
-      rating: snapshot.ratingAfter,
-      gamesPlayed: snapshot.gamesPlayedAfter,
-    }
-    return {
-      playerId: playerId as PlayerId,
-      before,
-      after,
-      expectedScore: snapshot.expectedScore,
-      actualScore: snapshot.actualScore as 1 | 0.5 | 0,
-      delta: snapshot.delta,
-      wasProvisional: before.gamesPlayed < provisionalGames,
-    }
-  }
-
-  const home = toParticipant(matchRow.homePlayerId, homeSnapshot)
-  const away = toParticipant(matchRow.awayPlayerId, awaySnapshot)
-  const winner = home.actualScore === 1 ? home : away.actualScore === 1 ? away : null
-  const upset = winner !== null && winner.expectedScore < 0.5
-
-  return { home, away, upset }
-}
-
 async function loadDuplicateResult(
   db: Queryable,
   existing: MatchRow,
@@ -126,7 +81,7 @@ async function loadDuplicateResult(
   provisionalGames: number,
 ): Promise<RecordMatchResult> {
   const snapshots = await snapshotsForMatch(db, configId, existing.id)
-  const outcome = outcomeFromRows(existing, snapshots, provisionalGames)
+  const outcome = outcomeFromSnapshotRows(existing, snapshots, provisionalGames)
   // Historical rank movement isn't reconstructed on retry — see docs/API.md#idempotency. Ratings
   // and deltas are exact either way; only the "rank changed" fanfare is skipped on a retried call.
   return { match: toMatchDto(existing), outcome, rankChanges: [] }

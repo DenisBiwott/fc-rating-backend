@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import { migrate } from 'drizzle-orm/postgres-js/migrator'
 import postgres from 'postgres'
+import { postgresTypes } from '../../../src/infra/db/connection-options.js'
 import * as schema from '../../../src/infra/db/schema.js'
 
 /**
@@ -31,7 +32,7 @@ export async function createTestDb(): Promise<TestDb> {
   await admin.end()
 
   url.pathname = `/${dbName}`
-  const sql = postgres(url.toString(), { max: 5 })
+  const sql = postgres(url.toString(), { max: 5, types: postgresTypes })
   const db = drizzle(sql, { schema })
 
   await migrate(db, { migrationsFolder: 'src/infra/db/migrations' })

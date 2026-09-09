@@ -66,6 +66,7 @@ export default defineConfig(
       '@typescript-eslint/explicit-function-return-type': 'off',
     },
   },
+  // @ts-ignore
   domainBoundaryRule,
   prettier,
 )

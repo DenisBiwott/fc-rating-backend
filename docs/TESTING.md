@@ -10,6 +10,13 @@
 Test data comes from a small `factories.ts` (players, matches) with deterministic IDs — no faker
 at MVP; determinism matters more than realism for property tests and replay-equivalence checks.
 
+`pnpm test` runs the domain suite only (fast, no database). `pnpm test:integration` runs the
+App/DB suite (needs `docker-compose.dev.yml`'s Postgres running) — each integration test _file_
+gets its own fully isolated Postgres **database** (not just a schema; see the comment atop
+`test/integration/helpers/test-db.ts` for why a schema-level sandbox doesn't work here), created
+fresh and dropped in `afterAll`. `pnpm test:all` runs both. The API row isn't implemented yet — no
+HTTP layer exists.
+
 ## Why the rebuild-equals-incremental test matters most
 
 Everything else in this codebase can be re-derived if it's wrong, because it's all downstream of

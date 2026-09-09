@@ -97,3 +97,45 @@ export async function allLatestSnapshots(db: Queryable, configId: string): Promi
 export async function deleteSnapshotsForConfig(tx: Transaction, configId: string): Promise<void> {
   await tx.delete(ratingSnapshots).where(eq(ratingSnapshots.configId, configId))
 }
+
+export interface RatingHistoryEntry {
+  matchId: string
+  sequence: number
+  playedAt: Date
+  before: number
+  after: number
+  delta: number
+}
+
+type RatingHistoryRow = {
+  match_id: string
+  sequence: number
+  played_at: Date
+  rating_before: number
+  rating_after: number
+  delta: number
+}
+
+/** One player's rating trajectory for a config, in match order — powers the profile sparkline. */
+export async function ratingHistoryForPlayer(
+  db: Queryable,
+  configId: string,
+  playerId: string,
+): Promise<RatingHistoryEntry[]> {
+  const rows = await db.execute<RatingHistoryRow>(sql`
+    select rs.match_id, rs.match_sequence as sequence, m.played_at, rs.rating_before, rs.rating_after, rs.delta
+    from rating_snapshots rs
+    join matches m on m.id = rs.match_id
+    where rs.config_id = ${configId} and rs.player_id = ${playerId}
+    order by rs.match_sequence
+  `)
+
+  return rows.map((row) => ({
+    matchId: row.match_id,
+    sequence: row.sequence,
+    playedAt: row.played_at,
+    before: row.rating_before,
+    after: row.rating_after,
+    delta: row.delta,
+  }))
+}

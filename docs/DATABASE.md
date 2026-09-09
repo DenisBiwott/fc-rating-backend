@@ -37,12 +37,19 @@ for the original DDL this schema was built from.
 
 ## Views (not tables)
 
-- **`match_effective`** — latest effective adjustment per match, overlaid onto the original. Used
-  by read paths (history, profiles) that need the current truth of a match without running a full
+- **`match_effective`** — latest effective adjustment per match, overlaid onto the original.
+  Actively used: `src/infra/db/queries/match-effective.ts` reads it for every history/profile/
+  session-summary read path that needs the current truth of a match without running a full
   replay.
 - **`leaderboard`** — latest snapshot per `(config_id, player_id)` joined with win/draw/loss counts
-  derived from `match_effective`. Players with zero games are unioned in at the baseline rating by
-  the query layer (not the view) so newly-added, never-played players still appear.
+  derived from `match_effective`, per design doc §4.1. **Not currently queried by the application**
+  — the `leaderboard()` use-case (`src/app/leaderboard.ts`) independently computes an equivalent
+  (plus `form[5]`, streak, `isProvisional`, none of which are practical to express as plain SQL
+  aggregates) using `activePlayerRatings()` and the domain layer's pure functions instead. The
+  "zero-game players appear at baseline" behavior lives in `activePlayerRatings()`, not in this
+  view — a direct SQL consumer of the `leaderboard` view will _not_ see never-played players. The
+  view still exists per the design doc and stays correct (see the `is_void` scar in the root
+  `CLAUDE.md`) for anyone querying the database directly.
 
 Both are derived views, not materialized — they read live off `matches` /
 `match_adjustments` / `rating_snapshots` on every query. At friend-group data volumes this is

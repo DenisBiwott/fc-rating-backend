@@ -12,12 +12,16 @@ Sports FC. Node 22 + TypeScript strict + Fastify + Drizzle ORM + PostgreSQL 16. 
 production-quality modular monolith, built as an engineering-learning project: correctness over
 speed, explicit over implicit, derived over cached, no premature infrastructure.
 
-**Status:** pre-scaffold — no code yet. Build order lives in
-[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The full product/data/API design lives in
-`../fc-rating-platform-design.md` (one directory up, outside this repo — a planning document, not
-committed here). This repo's docs are a distillation of the sections that govern it; if the two
-ever disagree, treat that as a bug in this repo's docs and flag it rather than silently trusting
-one side.
+**Status:** domain layer, database schema, and every app-layer use-case (`recordMatch`,
+`previewMatch`, `leaderboard`, `voidMatch`, `correctMatch`, `rebuildConfig`, `openSession`,
+`closeSession`, `sessionSummary`, `playerProfile`, `ratingHistory`) are built and tested against a
+live Postgres — build-order steps 1–4. **Not started: HTTP** (step 5 — Fastify routes, Zod
+schemas, cookie auth, `openapi.json` generation) — nothing in this repo is reachable over the
+network yet. Build order lives in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The full product/
+data/API design lives in `../fc-rating-platform-design.md` (one directory up, outside this repo —
+a planning document, not committed here). This repo's docs are a distillation of the sections
+that govern it; if the two ever disagree, treat that as a bug in this repo's docs and flag it
+rather than silently trusting one side.
 
 ## Non-negotiables
 
@@ -47,9 +51,21 @@ one side.
 
 ## Scars
 
-None yet — this is a greenfield repo. When a bug's fix is non-obvious (the straightforward version
-looks right but is wrong for a reason that isn't visible in the code), it goes here as a one-line
-prohibition + why, with the mechanism in the relevant topic doc.
+- **`match_effective`'s `is_void` column needs `coalesce(a.type = 'void', false)`, never a bare
+  `a.type = 'void'`.** When a match has no adjustment, `a.type` is `null`, and `null = 'void'`
+  evaluates to `null` — so a bare `WHERE not is_void` silently excludes every never-adjusted match
+  (almost all of them), not just void ones. Copied verbatim from the design doc's own SQL, which
+  has the same bug. See `src/infra/db/migrations/0001_views.sql`.
+- **A write through Drizzle's query builder (not a raw `db.execute(sql\`...\`)`) that violates a
+constraint throws `DrizzleQueryError`, not the underlying `PostgresError`.** The real error —
+`.code`, `.constraint_name`, etc. — is on `.cause`. Code that branches on a Postgres error code
+(see `src/infra/db/errors.ts`'s `isUniqueViolation`) must check both the error and `.cause`.
+- **postgres.js returns `bigint` columns as JS strings by default**, not numbers — silent until
+  something does a typed numeric comparison (`toBeLessThan`, etc.) rather than arithmetic (which
+  coerces). Fixed at the connection layer (`src/infra/db/connection-options.ts`) for
+  `matches.sequence`/`match_adjustments.sequence`, the only bigint columns in this schema and both
+  safely within `Number` range for this app's scale — don't reintroduce a raw connection that skips
+  this config.
 
 ## Scope boundaries
 
