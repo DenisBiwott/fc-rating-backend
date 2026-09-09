@@ -22,7 +22,7 @@ src/
   http/              # Fastify routes, Zod schemas, RFC 9457 errors, cookie auth (step 5, done)
 scripts/
   migrate.ts, seed.ts, reset-db.ts
-  generate-openapi.ts   # not started — step 6
+  generate-openapi.ts   # done — step 6; produces the committed openapi.json at the repo root
 test/
   unit/              # domain, plus the lint-boundary behavioral test
   integration/       # app + db, one fresh Postgres *database* per test file (see helpers/test-db.ts)
