@@ -14,13 +14,13 @@ import {
   insertSnapshots,
   snapshotsForMatch,
   type MatchRow,
-  type NewSnapshotRow,
   type SnapshotRow,
 } from '../infra/db/queries/matches.js'
 import { getActiveRatingConfig } from '../infra/db/queries/rating-configs.js'
 import { activePlayerRatings, latestSnapshotsFor } from '../infra/db/queries/ratings.js'
-import { MatchValidationError } from './errors.js'
+import { toSnapshotRow } from './snapshot-mapper.js'
 import type { Deps, Queryable, Transaction } from './types.js'
+import { validateMatchShape } from './validation.js'
 
 export interface RecordMatchInput {
   id: string
@@ -59,17 +59,6 @@ export interface RecordMatchResult {
   rankChanges: readonly RankChange[]
 }
 
-function validate(input: RecordMatchInput): void {
-  if (input.homePlayerId === input.awayPlayerId) {
-    throw new MatchValidationError('A match cannot be played against yourself.')
-  }
-  for (const score of [input.homeScore, input.awayScore]) {
-    if (!Number.isInteger(score) || score < 0 || score > 99) {
-      throw new MatchValidationError('Scores must be integers between 0 and 99.')
-    }
-  }
-}
-
 function toMatchDto(row: MatchRow): MatchDto {
   return {
     id: row.id,
@@ -82,25 +71,6 @@ function toMatchDto(row: MatchRow): MatchDto {
     playedAt: row.playedAt,
     sessionId: row.sessionId,
     recordedBy: row.recordedBy,
-  }
-}
-
-function snapshotRowFor(
-  configId: string,
-  matchRow: MatchRow,
-  participant: ParticipantOutcome,
-): NewSnapshotRow {
-  return {
-    configId,
-    matchId: matchRow.id,
-    matchSequence: matchRow.sequence,
-    playerId: participant.playerId,
-    ratingBefore: participant.before.rating,
-    ratingAfter: participant.after.rating,
-    expectedScore: participant.expectedScore,
-    actualScore: participant.actualScore,
-    delta: participant.delta,
-    gamesPlayedAfter: participant.after.gamesPlayed,
   }
 }
 
@@ -233,8 +203,8 @@ async function recordUnderLock(
   })
 
   await insertSnapshots(tx, [
-    snapshotRowFor(configId, matchRow, outcome.home),
-    snapshotRowFor(configId, matchRow, outcome.away),
+    toSnapshotRow(configId, matchRow, outcome.home),
+    toSnapshotRow(configId, matchRow, outcome.away),
   ])
 
   const after = withUpdatedRating(withUpdatedRating(before, outcome.home), outcome.away)
@@ -249,7 +219,7 @@ async function recordUnderLock(
  * serialized by the active config's advisory lock.
  */
 export async function recordMatch(deps: Deps, input: RecordMatchInput): Promise<RecordMatchResult> {
-  validate(input)
+  validateMatchShape(input)
 
   const existing = await findMatchById(deps.db, input.id)
   if (existing !== undefined) {

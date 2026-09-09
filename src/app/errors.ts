@@ -4,3 +4,10 @@ export class MatchValidationError extends Error {
     this.name = 'MatchValidationError'
   }
 }
+
+export class MatchNotFoundError extends Error {
+  constructor(matchId: string) {
+    super(`Match not found: ${matchId}`)
+    this.name = 'MatchNotFoundError'
+  }
+}

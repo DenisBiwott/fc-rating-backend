@@ -1,7 +1,8 @@
-import { sql } from 'drizzle-orm'
-import type { Queryable } from '../../../app/types.js'
+import { eq, sql } from 'drizzle-orm'
+import type { Queryable, Transaction } from '../../../app/types.js'
 import type { RatedPlayer } from '../../../domain/leaderboard/types.js'
-import type { PlayerId } from '../../../domain/rating/types.js'
+import type { PlayerId, RatingState, RatingTable } from '../../../domain/rating/types.js'
+import { ratingSnapshots } from '../schema.js'
 
 type LatestSnapshotRow = {
   player_id: string
@@ -72,4 +73,27 @@ export async function activePlayerRatings(
     rating: row.rating,
     gamesPlayed: row.games_played,
   }))
+}
+
+/** Latest snapshot per player for this config, across every player who has ever had one — not just active players. Used to diff before/after a replay (void/correct/rebuild). */
+export async function allLatestSnapshots(db: Queryable, configId: string): Promise<RatingTable> {
+  const rows = await db.execute<LatestSnapshotRow>(sql`
+    select distinct on (player_id) player_id, rating_after, games_played_after
+    from rating_snapshots
+    where config_id = ${configId}
+    order by player_id, match_sequence desc
+  `)
+
+  const table = new Map<PlayerId, RatingState>()
+  for (const row of rows) {
+    table.set(row.player_id as PlayerId, {
+      rating: row.rating_after,
+      gamesPlayed: row.games_played_after,
+    })
+  }
+  return table
+}
+
+export async function deleteSnapshotsForConfig(tx: Transaction, configId: string): Promise<void> {
+  await tx.delete(ratingSnapshots).where(eq(ratingSnapshots.configId, configId))
 }

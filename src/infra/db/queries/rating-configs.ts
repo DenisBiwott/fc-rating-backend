@@ -23,23 +23,44 @@ export class NoActiveRatingConfigError extends Error {
   }
 }
 
-export interface ActiveRatingConfig {
+export class RatingConfigNotFoundError extends Error {
+  constructor(id: string) {
+    super(`Rating config not found: ${id}`)
+    this.name = 'RatingConfigNotFoundError'
+  }
+}
+
+export interface ResolvedRatingConfig {
   id: string
   config: DomainRatingConfig
 }
+
+type RatingConfigRow = typeof ratingConfigs.$inferSelect
 
 /**
  * `params` is `jsonb` at the database level — untyped until Zod parses it here, per design doc
  * §4.2: "shape validated by Zod in the app layer, not the database."
  */
-export async function getActiveRatingConfig(db: Queryable): Promise<ActiveRatingConfig> {
+function toResolvedRatingConfig(row: RatingConfigRow): ResolvedRatingConfig {
+  const params = eloParamsSchema.parse(row.params)
+  return { id: row.id, config: { algorithm: 'elo', params } }
+}
+
+export async function getActiveRatingConfig(db: Queryable): Promise<ResolvedRatingConfig> {
   const [row] = await db
     .select()
     .from(ratingConfigs)
     .where(eq(ratingConfigs.isActive, true))
     .limit(1)
   if (row === undefined) throw new NoActiveRatingConfigError()
+  return toResolvedRatingConfig(row)
+}
 
-  const params = eloParamsSchema.parse(row.params)
-  return { id: row.id, config: { algorithm: 'elo', params } }
+export async function getRatingConfigById(
+  db: Queryable,
+  id: string,
+): Promise<ResolvedRatingConfig> {
+  const [row] = await db.select().from(ratingConfigs).where(eq(ratingConfigs.id, id)).limit(1)
+  if (row === undefined) throw new RatingConfigNotFoundError(id)
+  return toResolvedRatingConfig(row)
 }

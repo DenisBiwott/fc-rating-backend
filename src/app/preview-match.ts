@@ -2,8 +2,8 @@ import { previewMatch as domainPreviewMatch } from '../domain/rating/engine.js'
 import type { MatchOutcome, PlayerId, RatingState } from '../domain/rating/types.js'
 import { getActiveRatingConfig } from '../infra/db/queries/rating-configs.js'
 import { latestSnapshotsFor } from '../infra/db/queries/ratings.js'
-import { MatchValidationError } from './errors.js'
 import type { Deps } from './types.js'
+import { validateMatchShape } from './validation.js'
 
 export interface PreviewMatchInput {
   homePlayerId: string
@@ -14,9 +14,7 @@ export interface PreviewMatchInput {
 
 /** Same math as recordMatch, without writing anything — powers the record-match preview line. */
 export async function previewMatch(deps: Deps, input: PreviewMatchInput): Promise<MatchOutcome> {
-  if (input.homePlayerId === input.awayPlayerId) {
-    throw new MatchValidationError('A match cannot be played against yourself.')
-  }
+  validateMatchShape(input)
 
   const { id: configId, config } = await getActiveRatingConfig(deps.db)
   const homeId = input.homePlayerId as PlayerId
