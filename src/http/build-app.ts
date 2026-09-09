@@ -40,8 +40,15 @@ export function buildApp(deps: Deps, config: Config): FastifyInstance {
   // Session auth is a cookie, so the frontend (a different origin in dev: 5173 vs this API's
   // 3000) needs both an explicit allowed origin and credentials:true — the wildcard default
   // origin doesn't send Access-Control-Allow-Credentials, which makes the browser drop the cookie
-  // even on an otherwise-successful cross-origin request.
-  void app.register(cors, { origin: config.CORS_ORIGIN, credentials: true })
+  // even on an otherwise-successful cross-origin request. @fastify/cors also defaults `methods`
+  // to just 'GET,HEAD,POST' — not the full CRUD set most CORS middleware assumes — so PATCH/DELETE
+  // routes silently 405 at the browser's preflight before ever reaching the API. That gap sat
+  // latent until the frontend's first PATCH call (player rename/deactivate) actually exercised it.
+  void app.register(cors, {
+    origin: config.CORS_ORIGIN,
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+  })
 
   // Must register before any routes — @fastify/swagger hooks onRoute to collect schemas, so
   // routes registered beforehand are invisible to it. See scripts/generate-openapi.ts, which
