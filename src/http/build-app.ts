@@ -67,15 +67,24 @@ export function buildApp(deps: Deps, config: Config): FastifyInstance {
   })
 
   registerAuthDecorator(app)
-
   registerErrorHandler(app)
-  registerHealthRoutes(app, deps)
-  registerAuthRoutes(app, deps)
-  registerPlayerRoutes(app, deps)
-  registerMatchRoutes(app, deps)
-  registerLeaderboardRoutes(app, deps)
-  registerSessionRoutes(app, deps)
-  registerRatingConfigRoutes(app, deps)
+
+  // @fastify/swagger's onRoute hook only exists once its plugin body has actually run, which
+  // (like any app.register(...) call) avvio defers to the boot queue rather than running inline —
+  // so a route added synchronously right here, in the same tick as the registrations above, would
+  // be added before that hook exists and onRoute hooks never fire retroactively. app.after(...)
+  // defers this callback until every plugin registered above has finished loading, guaranteeing
+  // the hook is in place first. Confirmed needed by generating openapi.json without it: every
+  // route served fine (app.printRoutes() showed them all) but app.swagger() reported 0 paths.
+  app.after(() => {
+    registerHealthRoutes(app, deps)
+    registerAuthRoutes(app, deps)
+    registerPlayerRoutes(app, deps)
+    registerMatchRoutes(app, deps)
+    registerLeaderboardRoutes(app, deps)
+    registerSessionRoutes(app, deps)
+    registerRatingConfigRoutes(app, deps)
+  })
 
   return app
 }
