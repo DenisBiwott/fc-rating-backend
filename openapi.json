@@ -1,0 +1,2965 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FC Rating API",
+    "version": "0.1.0",
+    "description": "Elo-based match rating API for a friend group's EA Sports FC league."
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "fc_session"
+      }
+    },
+    "schemas": {}
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Check API and database health",
+        "tags": [
+          "ops"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    },
+                    "db": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "db"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "login",
+        "summary": "Log in with the shared admin password",
+        "tags": [
+          "auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "password": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "admin",
+                            "recorder",
+                            "viewer"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "role"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "user"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "logout",
+        "summary": "Clear the session cookie",
+        "tags": [
+          "auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "operationId": "getCurrentUser",
+        "summary": "Get the current session's user, if any",
+        "tags": [
+          "auth"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "admin",
+                            "recorder",
+                            "viewer"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "role"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "user"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "number"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "instance": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/players": {
+      "post": {
+        "operationId": "createPlayer",
+        "summary": "Create a player (requires admin role)",
+        "tags": [
+          "players"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "avatarUrl": {
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "avatarUrl": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "avatarUrl",
+                    "isActive"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listPlayers",
+        "summary": "List players",
+        "tags": [
+          "players"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "in": "query",
+            "name": "active",
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "avatarUrl": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "isActive": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "avatarUrl",
+                      "isActive"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/players/{id}": {
+      "get": {
+        "operationId": "getPlayer",
+        "summary": "Get a player profile",
+        "tags": [
+          "players"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "playerId": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    },
+                    "rating": {
+                      "type": "number"
+                    },
+                    "gamesPlayed": {
+                      "type": "number"
+                    },
+                    "wins": {
+                      "type": "number"
+                    },
+                    "draws": {
+                      "type": "number"
+                    },
+                    "losses": {
+                      "type": "number"
+                    },
+                    "form": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "W",
+                          "L",
+                          "D"
+                        ]
+                      }
+                    },
+                    "streak": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "result": {
+                              "type": "string",
+                              "enum": [
+                                "W",
+                                "L",
+                                "D"
+                              ]
+                            },
+                            "length": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "result",
+                            "length"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "isProvisional": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "playerId",
+                    "name",
+                    "isActive",
+                    "rating",
+                    "gamesPlayed",
+                    "wins",
+                    "draws",
+                    "losses",
+                    "form",
+                    "streak",
+                    "isProvisional"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updatePlayer",
+        "summary": "Update a player (requires admin role)",
+        "tags": [
+          "players"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "avatarUrl": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "avatarUrl": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "avatarUrl",
+                    "isActive"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/players/{id}/rating-history": {
+      "get": {
+        "operationId": "getPlayerRatingHistory",
+        "summary": "Get a player's rating history",
+        "tags": [
+          "players"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "matchId": {
+                        "type": "string"
+                      },
+                      "sequence": {
+                        "type": "number"
+                      },
+                      "playedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      },
+                      "before": {
+                        "type": "number"
+                      },
+                      "after": {
+                        "type": "number"
+                      },
+                      "delta": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "matchId",
+                      "sequence",
+                      "playedAt",
+                      "before",
+                      "after",
+                      "delta"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/players/{id}/matches": {
+      "get": {
+        "operationId": "listPlayerMatches",
+        "summary": "List a player's matches, cursor-paginated",
+        "tags": [
+          "players"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "sequence": {
+                            "type": "number"
+                          },
+                          "homePlayerId": {
+                            "type": "string"
+                          },
+                          "awayPlayerId": {
+                            "type": "string"
+                          },
+                          "homeScore": {
+                            "type": "number"
+                          },
+                          "awayScore": {
+                            "type": "number"
+                          },
+                          "isVoid": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "sequence",
+                          "homePlayerId",
+                          "awayPlayerId",
+                          "homeScore",
+                          "awayScore",
+                          "isVoid"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matches/preview": {
+      "post": {
+        "operationId": "previewMatch",
+        "summary": "Preview a match outcome without recording it (requires recorder role)",
+        "tags": [
+          "matches"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "homePlayerId": {
+                    "type": "string"
+                  },
+                  "awayPlayerId": {
+                    "type": "string"
+                  },
+                  "homeScore": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 99
+                  },
+                  "awayScore": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 99
+                  }
+                },
+                "required": [
+                  "homePlayerId",
+                  "awayPlayerId",
+                  "homeScore",
+                  "awayScore"
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "home": {
+                      "type": "object",
+                      "properties": {
+                        "playerId": {
+                          "type": "string"
+                        },
+                        "before": {
+                          "type": "object",
+                          "properties": {
+                            "rating": {
+                              "type": "number"
+                            },
+                            "gamesPlayed": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "rating",
+                            "gamesPlayed"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "after": {
+                          "type": "object",
+                          "properties": {
+                            "rating": {
+                              "type": "number"
+                            },
+                            "gamesPlayed": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "rating",
+                            "gamesPlayed"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "expectedScore": {
+                          "type": "number"
+                        },
+                        "actualScore": {
+                          "anyOf": [
+                            {
+                              "type": "number",
+                              "enum": [
+                                1
+                              ]
+                            },
+                            {
+                              "type": "number",
+                              "enum": [
+                                0.5
+                              ]
+                            },
+                            {
+                              "type": "number",
+                              "enum": [
+                                0
+                              ]
+                            }
+                          ]
+                        },
+                        "delta": {
+                          "type": "number"
+                        },
+                        "wasProvisional": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "playerId",
+                        "before",
+                        "after",
+                        "expectedScore",
+                        "actualScore",
+                        "delta",
+                        "wasProvisional"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "away": {
+                      "type": "object",
+                      "properties": {
+                        "playerId": {
+                          "type": "string"
+                        },
+                        "before": {
+                          "type": "object",
+                          "properties": {
+                            "rating": {
+                              "type": "number"
+                            },
+                            "gamesPlayed": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "rating",
+                            "gamesPlayed"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "after": {
+                          "type": "object",
+                          "properties": {
+                            "rating": {
+                              "type": "number"
+                            },
+                            "gamesPlayed": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "rating",
+                            "gamesPlayed"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "expectedScore": {
+                          "type": "number"
+                        },
+                        "actualScore": {
+                          "anyOf": [
+                            {
+                              "type": "number",
+                              "enum": [
+                                1
+                              ]
+                            },
+                            {
+                              "type": "number",
+                              "enum": [
+                                0.5
+                              ]
+                            },
+                            {
+                              "type": "number",
+                              "enum": [
+                                0
+                              ]
+                            }
+                          ]
+                        },
+                        "delta": {
+                          "type": "number"
+                        },
+                        "wasProvisional": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "playerId",
+                        "before",
+                        "after",
+                        "expectedScore",
+                        "actualScore",
+                        "delta",
+                        "wasProvisional"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "upset": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "home",
+                    "away",
+                    "upset"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matches": {
+      "post": {
+        "operationId": "recordMatch",
+        "summary": "Record a match result (requires recorder role); idempotent on id",
+        "tags": [
+          "matches"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "homePlayerId": {
+                    "type": "string"
+                  },
+                  "awayPlayerId": {
+                    "type": "string"
+                  },
+                  "homeScore": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 99
+                  },
+                  "awayScore": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 99
+                  },
+                  "decidedOnPenalties": {
+                    "type": "boolean"
+                  },
+                  "playedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                  },
+                  "sessionId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "homePlayerId",
+                  "awayPlayerId",
+                  "homeScore",
+                  "awayScore"
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "match": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "sequence": {
+                          "type": "number"
+                        },
+                        "homePlayerId": {
+                          "type": "string"
+                        },
+                        "awayPlayerId": {
+                          "type": "string"
+                        },
+                        "homeScore": {
+                          "type": "number"
+                        },
+                        "awayScore": {
+                          "type": "number"
+                        },
+                        "decidedOnPenalties": {
+                          "type": "boolean"
+                        },
+                        "playedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "sessionId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "recordedBy": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "sequence",
+                        "homePlayerId",
+                        "awayPlayerId",
+                        "homeScore",
+                        "awayScore",
+                        "decidedOnPenalties",
+                        "playedAt",
+                        "sessionId",
+                        "recordedBy"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "outcome": {
+                      "type": "object",
+                      "properties": {
+                        "home": {
+                          "type": "object",
+                          "properties": {
+                            "playerId": {
+                              "type": "string"
+                            },
+                            "before": {
+                              "type": "object",
+                              "properties": {
+                                "rating": {
+                                  "type": "number"
+                                },
+                                "gamesPlayed": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "rating",
+                                "gamesPlayed"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "after": {
+                              "type": "object",
+                              "properties": {
+                                "rating": {
+                                  "type": "number"
+                                },
+                                "gamesPlayed": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "rating",
+                                "gamesPlayed"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "expectedScore": {
+                              "type": "number"
+                            },
+                            "actualScore": {
+                              "anyOf": [
+                                {
+                                  "type": "number",
+                                  "enum": [
+                                    1
+                                  ]
+                                },
+                                {
+                                  "type": "number",
+                                  "enum": [
+                                    0.5
+                                  ]
+                                },
+                                {
+                                  "type": "number",
+                                  "enum": [
+                                    0
+                                  ]
+                                }
+                              ]
+                            },
+                            "delta": {
+                              "type": "number"
+                            },
+                            "wasProvisional": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "playerId",
+                            "before",
+                            "after",
+                            "expectedScore",
+                            "actualScore",
+                            "delta",
+                            "wasProvisional"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "away": {
+                          "type": "object",
+                          "properties": {
+                            "playerId": {
+                              "type": "string"
+                            },
+                            "before": {
+                              "type": "object",
+                              "properties": {
+                                "rating": {
+                                  "type": "number"
+                                },
+                                "gamesPlayed": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "rating",
+                                "gamesPlayed"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "after": {
+                              "type": "object",
+                              "properties": {
+                                "rating": {
+                                  "type": "number"
+                                },
+                                "gamesPlayed": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "rating",
+                                "gamesPlayed"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "expectedScore": {
+                              "type": "number"
+                            },
+                            "actualScore": {
+                              "anyOf": [
+                                {
+                                  "type": "number",
+                                  "enum": [
+                                    1
+                                  ]
+                                },
+                                {
+                                  "type": "number",
+                                  "enum": [
+                                    0.5
+                                  ]
+                                },
+                                {
+                                  "type": "number",
+                                  "enum": [
+                                    0
+                                  ]
+                                }
+                              ]
+                            },
+                            "delta": {
+                              "type": "number"
+                            },
+                            "wasProvisional": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "playerId",
+                            "before",
+                            "after",
+                            "expectedScore",
+                            "actualScore",
+                            "delta",
+                            "wasProvisional"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "upset": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "home",
+                        "away",
+                        "upset"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "rankChanges": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "playerId": {
+                            "type": "string"
+                          },
+                          "from": {
+                            "type": "number"
+                          },
+                          "to": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "playerId",
+                          "from",
+                          "to"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "match",
+                    "outcome",
+                    "rankChanges"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listMatches",
+        "summary": "List matches, cursor-paginated",
+        "tags": [
+          "matches"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "sessionId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "playerId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "in": "query",
+            "name": "includeVoided",
+            "required": false
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "sequence": {
+                            "type": "number"
+                          },
+                          "homePlayerId": {
+                            "type": "string"
+                          },
+                          "awayPlayerId": {
+                            "type": "string"
+                          },
+                          "homeScore": {
+                            "type": "number"
+                          },
+                          "awayScore": {
+                            "type": "number"
+                          },
+                          "isVoid": {
+                            "type": "boolean"
+                          },
+                          "playedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "sessionId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "recordedBy": {
+                            "type": "string"
+                          },
+                          "recordedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "decidedOnPenalties": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "sequence",
+                          "homePlayerId",
+                          "awayPlayerId",
+                          "homeScore",
+                          "awayScore",
+                          "isVoid",
+                          "playedAt",
+                          "sessionId",
+                          "recordedBy",
+                          "recordedAt",
+                          "decidedOnPenalties"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matches/{id}": {
+      "get": {
+        "operationId": "getMatch",
+        "summary": "Get a single match and its adjustment history",
+        "tags": [
+          "matches"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "match": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "sequence": {
+                          "type": "number"
+                        },
+                        "homePlayerId": {
+                          "type": "string"
+                        },
+                        "awayPlayerId": {
+                          "type": "string"
+                        },
+                        "homeScore": {
+                          "type": "number"
+                        },
+                        "awayScore": {
+                          "type": "number"
+                        },
+                        "isVoid": {
+                          "type": "boolean"
+                        },
+                        "playedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "sessionId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "recordedBy": {
+                          "type": "string"
+                        },
+                        "recordedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        "decidedOnPenalties": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "sequence",
+                        "homePlayerId",
+                        "awayPlayerId",
+                        "homeScore",
+                        "awayScore",
+                        "isVoid",
+                        "playedAt",
+                        "sessionId",
+                        "recordedBy",
+                        "recordedAt",
+                        "decidedOnPenalties"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "adjustments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "matchId": {
+                            "type": "string"
+                          },
+                          "sequence": {
+                            "type": "number"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "void",
+                              "correct"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "newHomePlayerId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "newAwayPlayerId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "newHomeScore": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "newAwayScore": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "adjustedBy": {
+                            "type": "string"
+                          },
+                          "adjustedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "matchId",
+                          "sequence",
+                          "type",
+                          "reason",
+                          "newHomePlayerId",
+                          "newAwayPlayerId",
+                          "newHomeScore",
+                          "newAwayScore",
+                          "adjustedBy",
+                          "adjustedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "outcome": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "home": {
+                              "type": "object",
+                              "properties": {
+                                "playerId": {
+                                  "type": "string"
+                                },
+                                "before": {
+                                  "type": "object",
+                                  "properties": {
+                                    "rating": {
+                                      "type": "number"
+                                    },
+                                    "gamesPlayed": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "rating",
+                                    "gamesPlayed"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "after": {
+                                  "type": "object",
+                                  "properties": {
+                                    "rating": {
+                                      "type": "number"
+                                    },
+                                    "gamesPlayed": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "rating",
+                                    "gamesPlayed"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "expectedScore": {
+                                  "type": "number"
+                                },
+                                "actualScore": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number",
+                                      "enum": [
+                                        1
+                                      ]
+                                    },
+                                    {
+                                      "type": "number",
+                                      "enum": [
+                                        0.5
+                                      ]
+                                    },
+                                    {
+                                      "type": "number",
+                                      "enum": [
+                                        0
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "delta": {
+                                  "type": "number"
+                                },
+                                "wasProvisional": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "playerId",
+                                "before",
+                                "after",
+                                "expectedScore",
+                                "actualScore",
+                                "delta",
+                                "wasProvisional"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "away": {
+                              "type": "object",
+                              "properties": {
+                                "playerId": {
+                                  "type": "string"
+                                },
+                                "before": {
+                                  "type": "object",
+                                  "properties": {
+                                    "rating": {
+                                      "type": "number"
+                                    },
+                                    "gamesPlayed": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "rating",
+                                    "gamesPlayed"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "after": {
+                                  "type": "object",
+                                  "properties": {
+                                    "rating": {
+                                      "type": "number"
+                                    },
+                                    "gamesPlayed": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "rating",
+                                    "gamesPlayed"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "expectedScore": {
+                                  "type": "number"
+                                },
+                                "actualScore": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number",
+                                      "enum": [
+                                        1
+                                      ]
+                                    },
+                                    {
+                                      "type": "number",
+                                      "enum": [
+                                        0.5
+                                      ]
+                                    },
+                                    {
+                                      "type": "number",
+                                      "enum": [
+                                        0
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "delta": {
+                                  "type": "number"
+                                },
+                                "wasProvisional": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "playerId",
+                                "before",
+                                "after",
+                                "expectedScore",
+                                "actualScore",
+                                "delta",
+                                "wasProvisional"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "upset": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "home",
+                            "away",
+                            "upset"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "match",
+                    "adjustments",
+                    "outcome"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matches/{id}/void": {
+      "post": {
+        "operationId": "voidMatch",
+        "summary": "Void a match (requires admin role)",
+        "tags": [
+          "matches"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "reason"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "match": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "sequence": {
+                          "type": "number"
+                        },
+                        "homePlayerId": {
+                          "type": "string"
+                        },
+                        "awayPlayerId": {
+                          "type": "string"
+                        },
+                        "homeScore": {
+                          "type": "number"
+                        },
+                        "awayScore": {
+                          "type": "number"
+                        },
+                        "isVoid": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "sequence",
+                        "homePlayerId",
+                        "awayPlayerId",
+                        "homeScore",
+                        "awayScore",
+                        "isVoid"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "affectedPlayers": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "match",
+                    "affectedPlayers"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/matches/{id}/correct": {
+      "post": {
+        "operationId": "correctMatch",
+        "summary": "Correct a match (requires admin role)",
+        "tags": [
+          "matches"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "homePlayerId": {
+                    "type": "string"
+                  },
+                  "awayPlayerId": {
+                    "type": "string"
+                  },
+                  "homeScore": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 99
+                  },
+                  "awayScore": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 99
+                  }
+                },
+                "required": [
+                  "reason",
+                  "homePlayerId",
+                  "awayPlayerId",
+                  "homeScore",
+                  "awayScore"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "match": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "sequence": {
+                          "type": "number"
+                        },
+                        "homePlayerId": {
+                          "type": "string"
+                        },
+                        "awayPlayerId": {
+                          "type": "string"
+                        },
+                        "homeScore": {
+                          "type": "number"
+                        },
+                        "awayScore": {
+                          "type": "number"
+                        },
+                        "isVoid": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "sequence",
+                        "homePlayerId",
+                        "awayPlayerId",
+                        "homeScore",
+                        "awayScore",
+                        "isVoid"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "affectedPlayers": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "match",
+                    "affectedPlayers"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/leaderboard": {
+      "get": {
+        "operationId": "getLeaderboard",
+        "summary": "Get the current leaderboard",
+        "tags": [
+          "leaderboard"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rank": {
+                            "type": "number"
+                          },
+                          "playerId": {
+                            "type": "string"
+                          },
+                          "rating": {
+                            "type": "number"
+                          },
+                          "gamesPlayed": {
+                            "type": "number"
+                          },
+                          "wins": {
+                            "type": "number"
+                          },
+                          "draws": {
+                            "type": "number"
+                          },
+                          "losses": {
+                            "type": "number"
+                          },
+                          "winPct": {
+                            "type": "number"
+                          },
+                          "form": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "W",
+                                "L",
+                                "D"
+                              ]
+                            }
+                          },
+                          "streak": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "result": {
+                                    "type": "string",
+                                    "enum": [
+                                      "W",
+                                      "L",
+                                      "D"
+                                    ]
+                                  },
+                                  "length": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "result",
+                                  "length"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "isProvisional": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "rank",
+                          "playerId",
+                          "rating",
+                          "gamesPlayed",
+                          "wins",
+                          "draws",
+                          "losses",
+                          "winPct",
+                          "form",
+                          "streak",
+                          "isProvisional"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "meanRating": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "entries",
+                    "meanRating"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions": {
+      "post": {
+        "operationId": "openSession",
+        "summary": "Open a new session (requires recorder role)",
+        "tags": [
+          "sessions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "endedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "createdBy": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "startedAt",
+                    "endedAt",
+                    "createdBy"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listSessions",
+        "summary": "List sessions",
+        "tags": [
+          "sessions"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "startedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      },
+                      "endedAt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "createdBy": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "startedAt",
+                      "endedAt",
+                      "createdBy"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/current": {
+      "get": {
+        "operationId": "getCurrentSession",
+        "summary": "Get the currently open session, if any (204 if none)",
+        "tags": [
+          "sessions"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "endedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "createdBy": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "startedAt",
+                    "endedAt",
+                    "createdBy"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Default Response"
+          }
+        }
+      }
+    },
+    "/sessions/{id}": {
+      "get": {
+        "operationId": "getSessionSummary",
+        "summary": "Get a session summary",
+        "tags": [
+          "sessions"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "endedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "matchCount": {
+                      "type": "number"
+                    },
+                    "playerDeltas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "playerId": {
+                            "type": "string"
+                          },
+                          "delta": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "playerId",
+                          "delta"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "biggestMover": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "playerId": {
+                              "type": "string"
+                            },
+                            "delta": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "playerId",
+                            "delta"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "upsetCount": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "startedAt",
+                    "endedAt",
+                    "matchCount",
+                    "playerDeltas",
+                    "biggestMover",
+                    "upsetCount"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessions/{id}/close": {
+      "post": {
+        "operationId": "closeSession",
+        "summary": "Close a session (requires recorder role)",
+        "tags": [
+          "sessions"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "endedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "createdBy": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "startedAt",
+                    "endedAt",
+                    "createdBy"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rating-configs": {
+      "get": {
+        "operationId": "listRatingConfigs",
+        "summary": "List rating configs (requires admin role)",
+        "tags": [
+          "rating-configs"
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "algorithm": {
+                        "type": "string",
+                        "enum": [
+                          "elo"
+                        ]
+                      },
+                      "params": {
+                        "type": "object",
+                        "properties": {
+                          "baseline": {
+                            "type": "number"
+                          },
+                          "kProvisional": {
+                            "type": "number"
+                          },
+                          "provisionalGames": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "kEstablished": {
+                            "type": "number"
+                          },
+                          "drawScore": {
+                            "type": "number",
+                            "enum": [
+                              0.5
+                            ]
+                          }
+                        },
+                        "required": [
+                          "baseline",
+                          "kProvisional",
+                          "provisionalGames",
+                          "kEstablished",
+                          "drawScore"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "isActive": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "algorithm",
+                      "params",
+                      "isActive"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createRatingConfig",
+        "summary": "Create a rating config (requires admin role)",
+        "tags": [
+          "rating-configs"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "algorithm": {
+                    "type": "string",
+                    "enum": [
+                      "elo"
+                    ]
+                  },
+                  "params": {
+                    "type": "object",
+                    "properties": {
+                      "baseline": {
+                        "type": "number"
+                      },
+                      "kProvisional": {
+                        "type": "number"
+                      },
+                      "provisionalGames": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "kEstablished": {
+                        "type": "number"
+                      },
+                      "drawScore": {
+                        "type": "number",
+                        "enum": [
+                          0.5
+                        ]
+                      }
+                    },
+                    "required": [
+                      "baseline",
+                      "kProvisional",
+                      "provisionalGames",
+                      "kEstablished",
+                      "drawScore"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "algorithm",
+                  "params"
+                ]
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "algorithm": {
+                      "type": "string",
+                      "enum": [
+                        "elo"
+                      ]
+                    },
+                    "params": {
+                      "type": "object",
+                      "properties": {
+                        "baseline": {
+                          "type": "number"
+                        },
+                        "kProvisional": {
+                          "type": "number"
+                        },
+                        "provisionalGames": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        "kEstablished": {
+                          "type": "number"
+                        },
+                        "drawScore": {
+                          "type": "number",
+                          "enum": [
+                            0.5
+                          ]
+                        }
+                      },
+                      "required": [
+                        "baseline",
+                        "kProvisional",
+                        "provisionalGames",
+                        "kEstablished",
+                        "drawScore"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "algorithm",
+                    "params",
+                    "isActive"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rating-configs/{id}/rebuild": {
+      "post": {
+        "operationId": "rebuildRatingConfig",
+        "summary": "Rebuild rating snapshots for a config by replaying matches (requires admin role)",
+        "tags": [
+          "rating-configs"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "configId": {
+                      "type": "string"
+                    },
+                    "matchCount": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "configId",
+                    "matchCount"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rating-configs/{id}/leaderboard": {
+      "get": {
+        "operationId": "getRatingConfigLeaderboard",
+        "summary": "Preview the leaderboard a rating config would produce (requires admin role)",
+        "tags": [
+          "rating-configs"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "configId": {
+                      "type": "string"
+                    },
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "playerId": {
+                            "type": "string"
+                          },
+                          "rating": {
+                            "type": "number"
+                          },
+                          "gamesPlayed": {
+                            "type": "number"
+                          },
+                          "rank": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "playerId",
+                          "rating",
+                          "gamesPlayed",
+                          "rank"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "configId",
+                    "entries"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [],
+  "tags": [
+    {
+      "name": "auth"
+    },
+    {
+      "name": "players"
+    },
+    {
+      "name": "matches"
+    },
+    {
+      "name": "leaderboard"
+    },
+    {
+      "name": "sessions"
+    },
+    {
+      "name": "rating-configs"
+    },
+    {
+      "name": "ops"
+    }
+  ]
+}

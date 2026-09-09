@@ -19,7 +19,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx scripts/seed.ts",
-    "db:reset": "tsx scripts/reset-db.ts && pnpm db:migrate && pnpm db:seed"
+    "db:reset": "tsx scripts/reset-db.ts && pnpm db:migrate && pnpm db:seed",
+    "generate:openapi": "tsx scripts/generate-openapi.ts",
+    "generate:openapi:check": "tsx scripts/generate-openapi.ts --check"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
