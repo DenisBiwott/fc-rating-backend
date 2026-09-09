@@ -134,6 +134,56 @@ describe('GET /matches and GET /matches/:id', () => {
 
     await app.close()
   })
+
+  it('are public — no session required', async () => {
+    const app = buildTestApp(db)
+    const matchId = randomUUID()
+    await app.inject({
+      method: 'POST',
+      url: '/matches',
+      cookies,
+      payload: { id: matchId, homePlayerId: playerAId, awayPlayerId: playerBId, homeScore: 1, awayScore: 0 },
+    })
+
+    const list = await app.inject({ method: 'GET', url: '/matches' })
+    expect(list.statusCode).toBe(200)
+
+    const detail = await app.inject({ method: 'GET', url: `/matches/${matchId}` })
+    expect(detail.statusCode).toBe(200)
+
+    await app.close()
+  })
+})
+
+describe('GET /matches/:id/void-preview', () => {
+  it('previews without persisting, and stays admin-gated (not public like the other GET routes)', async () => {
+    const app = buildTestApp(db)
+    const matchId = randomUUID()
+    await app.inject({
+      method: 'POST',
+      url: '/matches',
+      cookies,
+      payload: { id: matchId, homePlayerId: playerAId, awayPlayerId: playerBId, homeScore: 1, awayScore: 0 },
+    })
+
+    const unauthed = await app.inject({ method: 'GET', url: `/matches/${matchId}/void-preview` })
+    expect(unauthed.statusCode).toBe(401)
+
+    const preview = await app.inject({
+      method: 'GET',
+      url: `/matches/${matchId}/void-preview`,
+      cookies,
+    })
+    expect(preview.statusCode).toBe(200)
+    expect(preview.json<{ players: { playerId: string }[] }>().players.map((p) => p.playerId).sort()).toEqual(
+      [playerAId, playerBId].sort(),
+    )
+
+    const detail = await app.inject({ method: 'GET', url: `/matches/${matchId}` })
+    expect(detail.json()).toMatchObject({ match: { isVoid: false } })
+
+    await app.close()
+  })
 })
 
 describe('POST /matches/:id/void', () => {

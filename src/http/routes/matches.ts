@@ -109,12 +109,10 @@ export function registerMatchRoutes(app: FastifyInstance, deps: Deps): void {
   typed.get(
     '/matches',
     {
-      preHandler: requireRole('viewer'),
       schema: {
         tags: ['matches'],
         operationId: 'listMatches',
         summary: 'List matches, cursor-paginated',
-        security: [{ sessionCookie: [] }],
         querystring: listMatchesQuerySchema,
         response: { 200: listMatchesResponseSchema },
       },
@@ -125,12 +123,10 @@ export function registerMatchRoutes(app: FastifyInstance, deps: Deps): void {
   typed.get(
     '/matches/:id',
     {
-      preHandler: requireRole('viewer'),
       schema: {
         tags: ['matches'],
         operationId: 'getMatch',
         summary: 'Get a single match and its adjustment history',
-        security: [{ sessionCookie: [] }],
         params: matchParamsSchema,
         response: { 200: matchDetailResponseSchema },
       },

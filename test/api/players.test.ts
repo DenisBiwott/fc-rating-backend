@@ -113,6 +113,13 @@ describe('GET /players', () => {
     await app.close()
   })
 
+  it('is public — no session required', async () => {
+    const app = buildTestApp(db)
+    const response = await app.inject({ method: 'GET', url: '/players' })
+    expect(response.statusCode).toBe(200)
+    await app.close()
+  })
+
   it('reports lastPlayedAt: null for an unplayed player, and a timestamp after a recorded match', async () => {
     const app = buildTestApp(db)
     const dana = await app.inject({ method: 'POST', url: '/players', cookies, payload: { name: 'Fay' } })
@@ -312,6 +319,22 @@ describe('GET /players/:id', () => {
       cookies,
     })
     expect(response.statusCode).toBe(404)
+
+    await app.close()
+  })
+
+  it('is public — no session required', async () => {
+    const app = buildTestApp(db)
+    const created = await app.inject({
+      method: 'POST',
+      url: '/players',
+      cookies,
+      payload: { name: 'Heidi' },
+    })
+    const id = created.json<{ id: string }>().id
+
+    const response = await app.inject({ method: 'GET', url: `/players/${id}` })
+    expect(response.statusCode).toBe(200)
 
     await app.close()
   })

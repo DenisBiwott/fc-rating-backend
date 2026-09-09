@@ -35,6 +35,13 @@ describe('GET /sessions/current', () => {
     expect(response.statusCode).toBe(204)
     await app.close()
   })
+
+  it('is public — no session required', async () => {
+    const app = buildTestApp(db)
+    const response = await app.inject({ method: 'GET', url: '/sessions/current' })
+    expect(response.statusCode).toBe(204)
+    await app.close()
+  })
 })
 
 describe('POST /sessions', () => {
@@ -97,6 +104,22 @@ describe('POST /sessions/:id/close and GET /sessions/:id', () => {
 
     await app.close()
   })
+
+  it('GET /sessions/:id is public — no session required', async () => {
+    const app = buildTestApp(db)
+    const opened = await app.inject({
+      method: 'POST',
+      url: '/sessions',
+      cookies,
+      payload: { name: 'Public read check' },
+    })
+    const id = opened.json<{ id: string }>().id
+
+    const summary = await app.inject({ method: 'GET', url: `/sessions/${id}` })
+    expect(summary.statusCode).toBe(200)
+
+    await app.close()
+  })
 })
 
 describe('GET /sessions', () => {
@@ -120,6 +143,13 @@ describe('GET /sessions', () => {
     const list = await app.inject({ method: 'GET', url: '/sessions', cookies })
     expect(list.json<{ name: string }[]>().map((s) => s.name).sort()).toEqual(['First', 'Second'])
 
+    await app.close()
+  })
+
+  it('is public — no session required', async () => {
+    const app = buildTestApp(db)
+    const response = await app.inject({ method: 'GET', url: '/sessions' })
+    expect(response.statusCode).toBe(200)
     await app.close()
   })
 })

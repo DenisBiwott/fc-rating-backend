@@ -318,11 +318,6 @@
             "required": false
           }
         ],
-        "security": [
-          {
-            "sessionCookie": []
-          }
-        ],
         "responses": {
           "200": {
             "description": "Default Response",
@@ -392,11 +387,6 @@
             "in": "path",
             "name": "id",
             "required": true
-          }
-        ],
-        "security": [
-          {
-            "sessionCookie": []
           }
         ],
         "responses": {
@@ -670,11 +660,6 @@
             "required": true
           }
         ],
-        "security": [
-          {
-            "sessionCookie": []
-          }
-        ],
         "responses": {
           "200": {
             "description": "Default Response",
@@ -758,11 +743,6 @@
             "in": "path",
             "name": "id",
             "required": true
-          }
-        ],
-        "security": [
-          {
-            "sessionCookie": []
           }
         ],
         "responses": {
@@ -1456,11 +1436,6 @@
             "required": false
           }
         ],
-        "security": [
-          {
-            "sessionCookie": []
-          }
-        ],
         "responses": {
           "200": {
             "description": "Default Response",
@@ -1569,11 +1544,6 @@
             "in": "path",
             "name": "id",
             "required": true
-          }
-        ],
-        "security": [
-          {
-            "sessionCookie": []
           }
         ],
         "responses": {
@@ -2253,11 +2223,6 @@
         "tags": [
           "leaderboard"
         ],
-        "security": [
-          {
-            "sessionCookie": []
-          }
-        ],
         "responses": {
           "200": {
             "description": "Default Response",
@@ -2456,11 +2421,6 @@
         "tags": [
           "sessions"
         ],
-        "security": [
-          {
-            "sessionCookie": []
-          }
-        ],
         "responses": {
           "200": {
             "description": "Default Response",
@@ -2520,11 +2480,6 @@
         "summary": "Get the currently open session, if any (204 if none)",
         "tags": [
           "sessions"
-        ],
-        "security": [
-          {
-            "sessionCookie": []
-          }
         ],
         "responses": {
           "200": {
@@ -2594,11 +2549,6 @@
             "in": "path",
             "name": "id",
             "required": true
-          }
-        ],
-        "security": [
-          {
-            "sessionCookie": []
           }
         ],
         "responses": {

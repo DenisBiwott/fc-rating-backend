@@ -66,12 +66,10 @@ export function registerSessionRoutes(app: FastifyInstance, deps: Deps): void {
   typed.get(
     '/sessions',
     {
-      preHandler: requireRole('viewer'),
       schema: {
         tags: ['sessions'],
         operationId: 'listSessions',
         summary: 'List sessions',
-        security: [{ sessionCookie: [] }],
         response: { 200: sessionListResponseSchema },
       },
     },
@@ -81,12 +79,10 @@ export function registerSessionRoutes(app: FastifyInstance, deps: Deps): void {
   typed.get(
     '/sessions/current',
     {
-      preHandler: requireRole('viewer'),
       schema: {
         tags: ['sessions'],
         operationId: 'getCurrentSession',
         summary: 'Get the currently open session, if any (204 if none)',
-        security: [{ sessionCookie: [] }],
         response: { 200: sessionSchema, 204: z.undefined() },
       },
     },
@@ -103,12 +99,10 @@ export function registerSessionRoutes(app: FastifyInstance, deps: Deps): void {
   typed.get(
     '/sessions/:id',
     {
-      preHandler: requireRole('viewer'),
       schema: {
         tags: ['sessions'],
         operationId: 'getSessionSummary',
         summary: 'Get a session summary',
-        security: [{ sessionCookie: [] }],
         params: sessionParamsSchema,
         response: { 200: sessionSummaryResponseSchema },
       },

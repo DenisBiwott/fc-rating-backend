@@ -53,12 +53,10 @@ export function registerPlayerRoutes(app: FastifyInstance, deps: Deps): void {
   typed.get(
     '/players',
     {
-      preHandler: requireRole('viewer'),
       schema: {
         tags: ['players'],
         operationId: 'listPlayers',
         summary: 'List players',
-        security: [{ sessionCookie: [] }],
         querystring: listPlayersQuerySchema,
         response: { 200: playerListResponseSchema },
       },
@@ -75,12 +73,10 @@ export function registerPlayerRoutes(app: FastifyInstance, deps: Deps): void {
   typed.get(
     '/players/:id',
     {
-      preHandler: requireRole('viewer'),
       schema: {
         tags: ['players'],
         operationId: 'getPlayer',
         summary: 'Get a player profile',
-        security: [{ sessionCookie: [] }],
         params: playerParamsSchema,
         response: { 200: playerProfileResponseSchema },
       },
@@ -132,12 +128,10 @@ export function registerPlayerRoutes(app: FastifyInstance, deps: Deps): void {
   typed.get(
     '/players/:id/rating-history',
     {
-      preHandler: requireRole('viewer'),
       schema: {
         tags: ['players'],
         operationId: 'getPlayerRatingHistory',
         summary: "Get a player's rating history",
-        security: [{ sessionCookie: [] }],
         params: playerParamsSchema,
         response: { 200: ratingHistoryResponseSchema },
       },
@@ -151,12 +145,10 @@ export function registerPlayerRoutes(app: FastifyInstance, deps: Deps): void {
   typed.get(
     '/players/:id/matches',
     {
-      preHandler: requireRole('viewer'),
       schema: {
         tags: ['players'],
         operationId: 'listPlayerMatches',
         summary: "List a player's matches, cursor-paginated",
-        security: [{ sessionCookie: [] }],
         params: playerParamsSchema,
         querystring: paginationQuerySchema,
         response: { 200: playerMatchesResponseSchema },

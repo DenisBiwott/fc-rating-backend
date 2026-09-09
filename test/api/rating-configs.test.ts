@@ -87,6 +87,13 @@ describe('GET /rating-configs', () => {
 
     await app.close()
   })
+
+  it('stays admin-gated — config/tuning data, not public player data', async () => {
+    const app = buildTestApp(db)
+    const response = await app.inject({ method: 'GET', url: '/rating-configs' })
+    expect(response.statusCode).toBe(401)
+    await app.close()
+  })
 })
 
 describe('GET /rating-configs/:id/leaderboard', () => {

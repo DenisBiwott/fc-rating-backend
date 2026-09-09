@@ -54,10 +54,10 @@ describe('GET /leaderboard', () => {
     await app.close()
   })
 
-  it('requires auth', async () => {
+  it('is public — no session required', async () => {
     const app = buildTestApp(db)
     const response = await app.inject({ method: 'GET', url: '/leaderboard' })
-    expect(response.statusCode).toBe(401)
+    expect(response.statusCode).toBe(200)
     await app.close()
   })
 })

@@ -2,7 +2,6 @@ import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { leaderboard } from '../../app/leaderboard.js'
 import type { Deps } from '../../app/types.js'
-import { requireRole } from '../plugins/auth.js'
 import { leaderboardResponseSchema } from '../schemas/leaderboard.js'
 
 export function registerLeaderboardRoutes(app: FastifyInstance, deps: Deps): void {
@@ -11,12 +10,10 @@ export function registerLeaderboardRoutes(app: FastifyInstance, deps: Deps): voi
   typed.get(
     '/leaderboard',
     {
-      preHandler: requireRole('viewer'),
       schema: {
         tags: ['leaderboard'],
         operationId: 'getLeaderboard',
         summary: 'Get the current leaderboard',
-        security: [{ sessionCookie: [] }],
         response: { 200: leaderboardResponseSchema },
       },
     },
