@@ -45,7 +45,9 @@ time or a new ID, it asks for it as a parameter; tests inject deterministic fake
 
 ## Domain model
 
-- **Player** — identity of a competitor. Has `isActive`. Never deleted, only deactivated.
+- **Player** — identity of a competitor. Has `isActive`. Never deleted once they've played a
+  match — only deactivated; a zero-match player can be hard-deleted (`DELETE /players/:id`,
+  409 otherwise).
 - **Match** — immutable record of one 1v1 game: home/away player, scores, `playedAt`, optional
   session, who recorded it, and a DB-assigned `sequence` that defines rating order.
 - **MatchAdjustment** — append-only correction: `void` or `correct` (with replacement

@@ -624,6 +624,33 @@
             }
           }
         }
+      },
+      "delete": {
+        "operationId": "deletePlayer",
+        "summary": "Delete a player who has never played a match (requires admin role)",
+        "tags": [
+          "players"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
       }
     },
     "/players/{id}/rating-history": {

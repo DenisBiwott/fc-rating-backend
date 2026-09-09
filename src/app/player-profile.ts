@@ -31,7 +31,8 @@ export interface PlayerProfile {
 /**
  * Unlike leaderboard(), this works for deactivated players too — a profile is a historical
  * record, not a "who's currently playing" view. See docs/ARCHITECTURE.md#domain-model: players
- * are never deleted, only deactivated.
+ * are never deleted once they've played — only deactivated. (A zero-match player has no history
+ * to preserve and can be hard-deleted; see delete-player.ts.)
  */
 export async function playerProfile(deps: Deps, playerId: string): Promise<PlayerProfile> {
   const player = await findPlayerById(deps.db, playerId)

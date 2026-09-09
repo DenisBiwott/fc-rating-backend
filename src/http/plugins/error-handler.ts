@@ -4,6 +4,7 @@ import {
   InvalidCredentialsError,
   MatchNotFoundError,
   MatchValidationError,
+  PlayerHasMatchesError,
   PlayerNameConflictError,
   PlayerNotFoundError,
   RatingConfigNameConflictError,
@@ -51,6 +52,10 @@ const errorMappings: readonly [test: (error: unknown) => boolean, mapping: Probl
   ],
   [
     (e) => e instanceof PlayerNameConflictError,
+    { status: 409, type: 'conflict', title: 'Conflict' },
+  ],
+  [
+    (e) => e instanceof PlayerHasMatchesError,
     { status: 409, type: 'conflict', title: 'Conflict' },
   ],
   [

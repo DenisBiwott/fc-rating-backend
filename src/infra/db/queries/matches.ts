@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, or } from 'drizzle-orm'
 import type { Queryable, Transaction } from '../../../app/types.js'
 import { matches, ratingSnapshots } from '../schema.js'
 
@@ -10,6 +10,23 @@ export type NewSnapshotRow = typeof ratingSnapshots.$inferInsert
 export async function findMatchById(db: Queryable, id: string): Promise<MatchRow | undefined> {
   const [row] = await db.select().from(matches).where(eq(matches.id, id)).limit(1)
   return row
+}
+
+/**
+ * Whether this player appears in any matches row, ever — including voided ones. Matches are
+ * never deleted (append-only), so a player who's played even once keeps a permanent row here
+ * regardless of later voiding, and matches.homePlayerId/awayPlayerId's FK to players.id (no
+ * cascade) would reject a delete. This is the literal "zero matches in the append-only match
+ * log" check for player deletion, not the replay-derived gamesPlayed counter (which a fully
+ * voided player would show as 0 despite still having a row here).
+ */
+export async function playerHasMatches(db: Queryable, playerId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: matches.id })
+    .from(matches)
+    .where(or(eq(matches.homePlayerId, playerId), eq(matches.awayPlayerId, playerId)))
+    .limit(1)
+  return row !== undefined
 }
 
 export async function insertMatch(tx: Transaction, input: NewMatchRow): Promise<MatchRow> {

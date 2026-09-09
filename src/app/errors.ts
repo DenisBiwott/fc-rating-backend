@@ -54,6 +54,13 @@ export class PlayerNameConflictError extends Error {
   }
 }
 
+export class PlayerHasMatchesError extends Error {
+  constructor(playerId: string) {
+    super(`Player ${playerId} has matches and cannot be deleted.`)
+    this.name = 'PlayerHasMatchesError'
+  }
+}
+
 export class RatingConfigNameConflictError extends Error {
   constructor(name: string) {
     super(`A rating config named "${name}" already exists.`)

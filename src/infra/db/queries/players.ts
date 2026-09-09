@@ -46,3 +46,7 @@ export async function updatePlayerRow(
     .returning()
   return row
 }
+
+export async function deletePlayerRow(db: Queryable, id: string): Promise<void> {
+  await db.delete(players).where(eq(players.id, id))
+}

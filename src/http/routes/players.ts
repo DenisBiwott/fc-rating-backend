@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { createPlayer } from '../../app/create-player.js'
+import { deletePlayer } from '../../app/delete-player.js'
 import { listPlayers } from '../../app/list-players.js'
 import { playerMatches } from '../../app/player-matches.js'
 import { playerProfile } from '../../app/player-profile.js'
@@ -107,6 +108,24 @@ export function registerPlayerRoutes(app: FastifyInstance, deps: Deps): void {
     async (request) => {
       const player = await updatePlayer(deps, request.params.id, omitUndefined(request.body))
       return toPlayerDto(player)
+    },
+  )
+
+  typed.delete(
+    '/players/:id',
+    {
+      preHandler: requireRole('admin'),
+      schema: {
+        tags: ['players'],
+        operationId: 'deletePlayer',
+        summary: 'Delete a player who has never played a match (requires admin role)',
+        security: [{ sessionCookie: [] }],
+        params: playerParamsSchema,
+      },
+    },
+    async (request, reply) => {
+      await deletePlayer(deps, request.params.id)
+      return reply.code(204).send()
     },
   )
 

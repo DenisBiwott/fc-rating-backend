@@ -174,6 +174,109 @@ describe('PATCH /players/:id', () => {
   })
 })
 
+describe('DELETE /players/:id', () => {
+  it('deletes a player with zero matches', async () => {
+    const app = buildTestApp(db)
+    const created = await app.inject({
+      method: 'POST',
+      url: '/players',
+      cookies,
+      payload: { name: 'Hank' },
+    })
+    const id = created.json<{ id: string }>().id
+
+    const response = await app.inject({ method: 'DELETE', url: `/players/${id}`, cookies })
+    expect(response.statusCode).toBe(204)
+
+    const gone = await app.inject({ method: 'GET', url: `/players/${id}`, cookies })
+    expect(gone.statusCode).toBe(404)
+
+    await app.close()
+  })
+
+  it('rejects with 409 a player who has played a match', async () => {
+    const app = buildTestApp(db)
+    const home = await app.inject({ method: 'POST', url: '/players', cookies, payload: { name: 'Ivy' } })
+    const away = await app.inject({ method: 'POST', url: '/players', cookies, payload: { name: 'Jack' } })
+    const homeId = home.json<{ id: string }>().id
+    const awayId = away.json<{ id: string }>().id
+    await app.inject({
+      method: 'POST',
+      url: '/matches',
+      cookies,
+      payload: { id: randomUUID(), homePlayerId: homeId, awayPlayerId: awayId, homeScore: 1, awayScore: 0 },
+    })
+
+    const response = await app.inject({ method: 'DELETE', url: `/players/${homeId}`, cookies })
+    expect(response.statusCode).toBe(409)
+    expect(response.json()).toMatchObject({ type: 'conflict' })
+
+    const stillThere = await app.inject({ method: 'GET', url: `/players/${homeId}`, cookies })
+    expect(stillThere.statusCode).toBe(200)
+
+    await app.close()
+  })
+
+  it('rejects with 409 even if the player\'s only match was later voided', async () => {
+    const app = buildTestApp(db)
+    const home = await app.inject({ method: 'POST', url: '/players', cookies, payload: { name: 'Kim' } })
+    const away = await app.inject({ method: 'POST', url: '/players', cookies, payload: { name: 'Liu' } })
+    const homeId = home.json<{ id: string }>().id
+    const awayId = away.json<{ id: string }>().id
+    const match = await app.inject({
+      method: 'POST',
+      url: '/matches',
+      cookies,
+      payload: { id: randomUUID(), homePlayerId: homeId, awayPlayerId: awayId, homeScore: 1, awayScore: 0 },
+    })
+    const matchId = match.json<{ match: { id: string } }>().match.id
+    await app.inject({
+      method: 'POST',
+      url: `/matches/${matchId}/void`,
+      cookies,
+      payload: { reason: 'test' },
+    })
+
+    // gamesPlayed is back to 0 via replay, but the matches row is permanent — the FK-backed check
+    // must still block the delete rather than crash on the DB constraint.
+    const profile = await app.inject({ method: 'GET', url: `/players/${homeId}`, cookies })
+    expect(profile.json()).toMatchObject({ gamesPlayed: 0 })
+
+    const response = await app.inject({ method: 'DELETE', url: `/players/${homeId}`, cookies })
+    expect(response.statusCode).toBe(409)
+
+    await app.close()
+  })
+
+  it('returns 404 for an unknown player', async () => {
+    const app = buildTestApp(db)
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/players/00000000-0000-7000-8000-000000000000',
+      cookies,
+    })
+    expect(response.statusCode).toBe(404)
+
+    await app.close()
+  })
+
+  it('requires auth', async () => {
+    const app = buildTestApp(db)
+    const created = await app.inject({
+      method: 'POST',
+      url: '/players',
+      cookies,
+      payload: { name: 'Mona' },
+    })
+    const id = created.json<{ id: string }>().id
+
+    const response = await app.inject({ method: 'DELETE', url: `/players/${id}` })
+    expect(response.statusCode).toBe(401)
+
+    await app.close()
+  })
+})
+
 describe('GET /players/:id', () => {
   it('returns a profile for an unplayed player at baseline rating', async () => {
     const app = buildTestApp(db)
