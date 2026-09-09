@@ -16,7 +16,7 @@ declare module 'fastify' {
 
 const roleRank: Record<Role, number> = { viewer: 0, recorder: 1, admin: 2 }
 
-const COOKIE_NAME = 'fc_session'
+export const SESSION_COOKIE_NAME = 'fc_session'
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
 
 export function registerAuthDecorator(app: FastifyInstance): void {
@@ -24,7 +24,7 @@ export function registerAuthDecorator(app: FastifyInstance): void {
 }
 
 export function setSessionCookie(reply: FastifyReply, user: SessionUser): void {
-  reply.setCookie(COOKIE_NAME, JSON.stringify(user), {
+  reply.setCookie(SESSION_COOKIE_NAME, JSON.stringify(user), {
     signed: true,
     httpOnly: true,
     sameSite: 'lax',
@@ -34,7 +34,7 @@ export function setSessionCookie(reply: FastifyReply, user: SessionUser): void {
 }
 
 export function clearSessionCookie(reply: FastifyReply): void {
-  reply.clearCookie(COOKIE_NAME, { path: '/' })
+  reply.clearCookie(SESSION_COOKIE_NAME, { path: '/' })
 }
 
 function isSessionUser(value: unknown): value is SessionUser {
@@ -52,7 +52,7 @@ function isSessionUser(value: unknown): value is SessionUser {
 
 /** Reads and verifies the signed session cookie. Returns undefined if absent, tampered, or malformed. */
 export function getSessionUser(request: FastifyRequest): SessionUser | undefined {
-  const raw = request.cookies[COOKIE_NAME]
+  const raw = request.cookies[SESSION_COOKIE_NAME]
   if (raw === undefined) return undefined
 
   const unsigned = request.unsignCookie(raw)
