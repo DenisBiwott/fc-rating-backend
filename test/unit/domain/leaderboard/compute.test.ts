@@ -35,6 +35,32 @@ describe('rankPlayers', () => {
     ])
     expect(rankedOnce.map((p) => p.playerId)).toEqual(rankedAgain.map((p) => p.playerId))
   })
+
+  it('sorts a 0-game player below everyone who has played, even if outrated', () => {
+    const ranked = rankPlayers([
+      { playerId: alice, rating: 1200, gamesPlayed: 0 }, // sits at baseline, never played
+      { playerId: bob, rating: 1100, gamesPlayed: 20 }, // played and lost a lot, still rated
+    ])
+    expect(ranked.map((p) => p.playerId)).toEqual([bob, alice])
+    expect(ranked.map((p) => p.rank)).toEqual([1, 2])
+  })
+
+  it('breaks ties among 0-game players by playerId, same as rated players', () => {
+    const ranked = rankPlayers([
+      { playerId: bob, rating: 1200, gamesPlayed: 0 },
+      { playerId: alice, rating: 1200, gamesPlayed: 0 },
+    ])
+    expect(ranked.map((p) => p.playerId)).toEqual([alice, bob])
+  })
+
+  it('leaves provisional (1-9 game) players ranked by rating, not pushed to the bottom', () => {
+    const ranked = rankPlayers([
+      { playerId: alice, rating: 1250, gamesPlayed: 4 }, // provisional, but has played
+      { playerId: bob, rating: 1300, gamesPlayed: 20 },
+      { playerId: carol, rating: 1200, gamesPlayed: 0 }, // unrated — must still sort last
+    ])
+    expect(ranked.map((p) => p.playerId)).toEqual([bob, alice, carol])
+  })
 })
 
 describe('isProvisional', () => {

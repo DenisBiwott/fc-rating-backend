@@ -2,11 +2,18 @@ import type { MatchResult } from '../match/types.js'
 import type { PlayerMatchRecord, RankedPlayer, RatedPlayer, StreakInfo } from './types.js'
 
 /**
- * Ranks by rating descending. Ties break on playerId so the ordering is deterministic —
- * two equal ratings must not silently reorder between two runs over the same input.
+ * Ranks by rating descending, with strictly 0-game (UNRATED) players always sorted below every
+ * player who has played at least once — a new player starts at the config baseline and shouldn't
+ * outrank someone who's actually played and lost. Provisional players (1-9 games) have real
+ * results and rank by rating like everyone else. Ties break on playerId so the ordering is
+ * deterministic — two equal ratings must not silently reorder between two runs over the same
+ * input.
  */
 export function rankPlayers(players: readonly RatedPlayer[]): readonly RankedPlayer[] {
   const sorted = [...players].sort((a, b) => {
+    const aUnrated = a.gamesPlayed === 0
+    const bUnrated = b.gamesPlayed === 0
+    if (aUnrated !== bUnrated) return aUnrated ? 1 : -1
     if (b.rating !== a.rating) return b.rating - a.rating
     return a.playerId.localeCompare(b.playerId)
   })
