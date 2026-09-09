@@ -16,6 +16,7 @@ and `scripts/reset-db.ts` still read `process.env.DATABASE_URL` (and `seed.ts` a
 | `COOKIE_SECRET`  | yes                         | Signs the `@fastify/cookie` session cookie. Min 32 characters — `src/config.ts` rejects a shorter one. Rotate = all sessions invalidated. |
 | `PORT`           | no — defaults to `3000`     | HTTP listen port, parsed in `src/config.ts`.                                                                 |
 | `NODE_ENV`       | no — defaults to `development` | Gates pino pretty-printing in `src/http/build-app.ts`; `test` silences Fastify's own request logger entirely. |
+| `CORS_ORIGIN`    | no — defaults to `http://localhost:5173` | The single allowed cross-origin caller for `@fastify/cors`, registered with `credentials: true` so the session cookie survives a cross-origin request. Set to the real frontend origin in production. |
 
 `.env.example` at the repo root mirrors this table; keep the two in sync. This table explains
 _why_ a var exists, `.env.example` is what you copy.

@@ -14,6 +14,7 @@ const config: Config = {
   COOKIE_SECRET: 'x'.repeat(32),
   PORT: 3000,
   NODE_ENV: 'test',
+  CORS_ORIGIN: 'http://localhost:5173',
 }
 
 // Schema registration never touches deps.db — only request handlers do, and this script never

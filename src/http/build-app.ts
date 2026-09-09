@@ -1,4 +1,5 @@
 import cookie from '@fastify/cookie'
+import cors from '@fastify/cors'
 import swagger from '@fastify/swagger'
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from 'fastify'
 import { jsonSchemaTransform, serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod'
@@ -35,6 +36,12 @@ export function buildApp(deps: Deps, config: Config): FastifyInstance {
   app.setSerializerCompiler(serializerCompiler)
 
   void app.register(cookie, { secret: config.COOKIE_SECRET })
+
+  // Session auth is a cookie, so the frontend (a different origin in dev: 5173 vs this API's
+  // 3000) needs both an explicit allowed origin and credentials:true — the wildcard default
+  // origin doesn't send Access-Control-Allow-Credentials, which makes the browser drop the cookie
+  // even on an otherwise-successful cross-origin request.
+  void app.register(cors, { origin: config.CORS_ORIGIN, credentials: true })
 
   // Must register before any routes — @fastify/swagger hooks onRoute to collect schemas, so
   // routes registered beforehand are invisible to it. See scripts/generate-openapi.ts, which

@@ -22,7 +22,12 @@ has a working endpoint and a generated OpenAPI 3.1 entry; run `pnpm dev` and the
 or `pnpm generate:openapi` to regenerate the committed contract. `pnpm generate:openapi:check`
 fails if the committed file is stale, but isn't wired into CI yet — no `.github/` directory exists;
 that's step 8. **Not started: response-shape conformance tests against the committed
-`openapi.json`** (step 7). Build order lives in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The
+`openapi.json`** (step 7). Verified for real against a running frontend dev server (not just
+`curl`/tests): the API had **no CORS configuration at all**, so every cross-origin request from
+the frontend's dev origin failed outright, the cookie never set — fixed by registering
+`@fastify/cors` with an allow-listed `CORS_ORIGIN` (default `http://localhost:5173`) and
+`credentials: true` (`src/http/build-app.ts`). A genuine backend gap, not a frontend workaround.
+Build order lives in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The
 full product/
 data/API design lives in `../fc-rating-platform-design.md` (one directory up, outside this repo —
 a planning document, not committed here). This repo's docs are a distillation of the sections

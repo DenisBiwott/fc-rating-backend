@@ -9,6 +9,7 @@ export const testConfig: Config = {
   COOKIE_SECRET: 'test-cookie-secret-at-least-32-characters-long',
   PORT: 0,
   NODE_ENV: 'test',
+  CORS_ORIGIN: 'http://localhost:5173',
 }
 
 export function buildTestApp(db: Database) {
