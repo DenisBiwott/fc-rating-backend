@@ -27,6 +27,12 @@ that's step 8. **Not started: response-shape conformance tests against the commi
 the frontend's dev origin failed outright, the cookie never set — fixed by registering
 `@fastify/cors` with an allow-listed `CORS_ORIGIN` (default `http://localhost:5173`) and
 `credentials: true` (`src/http/build-app.ts`). A genuine backend gap, not a frontend workaround.
+`GET /players/:id` also gained `bestStreak`/`goalsFor`/`goalsAgainst` (siblings to the existing
+`currentStreak` derivation in `src/domain/leaderboard/compute.ts` and `src/domain/match/result.ts`
+— reuse data `playerProfile()` already loads, no new query) and `createdAt`; `GET /players` gained
+`lastPlayedAt` (`lastPlayedAtByPlayer` in `src/infra/db/queries/match-effective.ts`, a
+`MAX(played_at)` across `match_effective`, one new query) — both added for the frontend's
+player-profile/roster screens (`fc-rating-frontend/CLAUDE.md`'s Phase 4). 115 tests pass (was 106).
 Build order lives in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The
 full product/
 data/API design lives in `../fc-rating-platform-design.md` (one directory up, outside this repo —
