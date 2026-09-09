@@ -7,6 +7,7 @@ import { previewMatch } from '../../app/preview-match.js'
 import { recordMatch, type MatchDto } from '../../app/record-match.js'
 import type { Deps } from '../../app/types.js'
 import { voidMatch } from '../../app/void-match.js'
+import { previewVoidMatch } from '../../app/void-match-preview.js'
 import { omitUndefined } from '../omit-undefined.js'
 import { requireRole, sessionUserOrThrow } from '../plugins/auth.js'
 import {
@@ -21,6 +22,7 @@ import {
   recordMatchBodySchema,
   recordMatchResponseSchema,
   voidMatchBodySchema,
+  voidMatchPreviewResponseSchema,
 } from '../schemas/match.js'
 
 function serializeMatchDto(match: MatchDto) {
@@ -134,6 +136,25 @@ export function registerMatchRoutes(app: FastifyInstance, deps: Deps): void {
       },
     },
     async (request) => serializeMatchDetail(await matchDetail(deps, request.params.id)),
+  )
+
+  typed.get(
+    '/matches/:id/void-preview',
+    {
+      preHandler: requireRole('admin'),
+      schema: {
+        tags: ['matches'],
+        operationId: 'previewVoidMatch',
+        summary: 'Preview the ratings/ranks that would result from voiding a match, without voiding it (requires admin role)',
+        security: [{ sessionCookie: [] }],
+        params: matchParamsSchema,
+        response: { 200: voidMatchPreviewResponseSchema },
+      },
+    },
+    async (request) => {
+      const result = await previewVoidMatch(deps, request.params.id)
+      return { ...result, players: [...result.players], rankChanges: [...result.rankChanges] }
+    },
   )
 
   typed.post(

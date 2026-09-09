@@ -1,3 +1,5 @@
+import { rankPlayers } from '../domain/leaderboard/compute.js'
+import type { RatedPlayer } from '../domain/leaderboard/types.js'
 import { toMatchInput } from '../domain/match/result.js'
 import { replay } from '../domain/rating/engine.js'
 import type { PlayerId, RatingConfig, RatingTable } from '../domain/rating/types.js'
@@ -67,4 +69,32 @@ export function diffAffectedPlayers(
   }
 
   return affected
+}
+
+export interface RankChange {
+  playerId: PlayerId
+  from: number
+  to: number
+}
+
+/**
+ * Rank movement between two full rated-player populations (before/after a match, void, or
+ * correction) — a player whose rank didn't change is omitted. Both inputs must cover the same
+ * population for a meaningful diff (e.g. every active player, per activePlayerRatings).
+ */
+export function diffRanks(
+  before: readonly RatedPlayer[],
+  after: readonly RatedPlayer[],
+): RankChange[] {
+  const beforeRankByPlayer = new Map(
+    rankPlayers(before).map((player) => [player.playerId, player.rank]),
+  )
+  const changes: RankChange[] = []
+  for (const player of rankPlayers(after)) {
+    const from = beforeRankByPlayer.get(player.playerId)
+    if (from !== undefined && from !== player.rank) {
+      changes.push({ playerId: player.playerId, from, to: player.rank })
+    }
+  }
+  return changes
 }

@@ -1,5 +1,4 @@
 import { sql } from 'drizzle-orm'
-import { rankPlayers } from '../domain/leaderboard/compute.js'
 import type { RatedPlayer } from '../domain/leaderboard/types.js'
 import { applyMatch } from '../domain/rating/engine.js'
 import type {
@@ -18,6 +17,7 @@ import {
 import { getActiveRatingConfig } from '../infra/db/queries/rating-configs.js'
 import { activePlayerRatings, latestSnapshotsFor } from '../infra/db/queries/ratings.js'
 import { outcomeFromSnapshotRows } from './reconstruct-outcome.js'
+import { diffRanks, type RankChange } from './replay.js'
 import { toSnapshotRow } from './snapshot-mapper.js'
 import type { Deps, Queryable, Transaction } from './types.js'
 import { validateMatchShape } from './validation.js'
@@ -32,12 +32,6 @@ export interface RecordMatchInput {
   playedAt?: Date
   sessionId?: string
   recordedBy: string
-}
-
-export interface RankChange {
-  playerId: PlayerId
-  from: number
-  to: number
 }
 
 export interface MatchDto {
@@ -85,20 +79,6 @@ async function loadDuplicateResult(
   // Historical rank movement isn't reconstructed on retry — see docs/API.md#idempotency. Ratings
   // and deltas are exact either way; only the "rank changed" fanfare is skipped on a retried call.
   return { match: toMatchDto(existing), outcome, rankChanges: [] }
-}
-
-function diffRanks(before: readonly RatedPlayer[], after: readonly RatedPlayer[]): RankChange[] {
-  const beforeRankByPlayer = new Map(
-    rankPlayers(before).map((player) => [player.playerId, player.rank]),
-  )
-  const changes: RankChange[] = []
-  for (const player of rankPlayers(after)) {
-    const from = beforeRankByPlayer.get(player.playerId)
-    if (from !== undefined && from !== player.rank) {
-      changes.push({ playerId: player.playerId, from, to: player.rank })
-    }
-  }
-  return changes
 }
 
 function withUpdatedRating(

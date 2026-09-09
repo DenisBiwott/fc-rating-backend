@@ -79,10 +79,12 @@ export const previewMatchBodySchema = z.object({
   awayScore: z.number().int().min(0).max(99),
 })
 
+export const rankChangeSchema = z.object({ playerId: z.string(), from: z.number(), to: z.number() })
+
 export const recordMatchResponseSchema = z.object({
   match: matchDtoSchema,
   outcome: matchOutcomeSchema,
-  rankChanges: z.array(z.object({ playerId: z.string(), from: z.number(), to: z.number() })),
+  rankChanges: z.array(rankChangeSchema),
 })
 
 export const listMatchesQuerySchema = paginationQuerySchema.extend({
@@ -129,4 +131,18 @@ export const correctMatchBodySchema = z.object({
 export const adjustmentResultResponseSchema = z.object({
   match: effectiveMatchSchema,
   affectedPlayers: z.array(z.string()),
+})
+
+export const voidMatchPreviewResponseSchema = z.object({
+  matchId: z.string(),
+  players: z.array(
+    z.object({
+      playerId: z.string(),
+      ratingBefore: z.number(),
+      gamesPlayedBefore: z.number(),
+      ratingAfter: z.number(),
+      gamesPlayedAfter: z.number(),
+    }),
+  ),
+  rankChanges: z.array(rankChangeSchema),
 })
