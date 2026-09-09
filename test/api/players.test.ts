@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import type { Database } from '../../src/app/types.js'
@@ -111,6 +112,35 @@ describe('GET /players', () => {
 
     await app.close()
   })
+
+  it('reports lastPlayedAt: null for an unplayed player, and a timestamp after a recorded match', async () => {
+    const app = buildTestApp(db)
+    const dana = await app.inject({ method: 'POST', url: '/players', cookies, payload: { name: 'Fay' } })
+    const eve = await app.inject({ method: 'POST', url: '/players', cookies, payload: { name: 'Gia' } })
+    const fayId = dana.json<{ id: string }>().id
+    const giaId = eve.json<{ id: string }>().id
+
+    const beforeMatch = await app.inject({ method: 'GET', url: '/players', cookies })
+    const fayBefore = beforeMatch.json<Array<{ id: string; lastPlayedAt: string | null }>>().find(
+      (p) => p.id === fayId,
+    )
+    expect(fayBefore?.lastPlayedAt).toBeNull()
+
+    await app.inject({
+      method: 'POST',
+      url: '/matches',
+      cookies,
+      payload: { id: randomUUID(), homePlayerId: fayId, awayPlayerId: giaId, homeScore: 1, awayScore: 0 },
+    })
+
+    const afterMatch = await app.inject({ method: 'GET', url: '/players', cookies })
+    const fayAfter = afterMatch.json<Array<{ id: string; lastPlayedAt: string | null }>>().find(
+      (p) => p.id === fayId,
+    )
+    expect(fayAfter?.lastPlayedAt).not.toBeNull()
+
+    await app.close()
+  })
 })
 
 describe('PATCH /players/:id', () => {
@@ -157,7 +187,8 @@ describe('GET /players/:id', () => {
 
     const response = await app.inject({ method: 'GET', url: `/players/${id}`, cookies })
     expect(response.statusCode).toBe(200)
-    expect(response.json()).toMatchObject({
+    const body = response.json<{ createdAt: string }>()
+    expect(body).toMatchObject({
       name: 'Grace',
       gamesPlayed: 0,
       wins: 0,
@@ -165,6 +196,7 @@ describe('GET /players/:id', () => {
       losses: 0,
       streak: null,
     })
+    expect(new Date(body.createdAt).toString()).not.toBe('Invalid Date')
 
     await app.close()
   })

@@ -175,3 +175,21 @@ export async function effectiveMatchesForSession(
   `)
   return rows.map(toEffectiveMatch)
 }
+
+/**
+ * Most recent (non-void) played-at time per player, across every match they've been part of on
+ * either side. A player with no matches simply has no entry — callers treat a missing key as null,
+ * same as latestSnapshotsFor's `?? baseline` pattern.
+ */
+export async function lastPlayedAtByPlayer(db: Queryable): Promise<Map<string, Date>> {
+  const rows = await db.execute<{ player_id: string; last_played_at: string }>(sql`
+    select player_id, max(played_at) as last_played_at
+    from (
+      select home_player_id as player_id, played_at from match_effective where not is_void
+      union all
+      select away_player_id as player_id, played_at from match_effective where not is_void
+    ) x
+    group by player_id
+  `)
+  return new Map(rows.map((row) => [row.player_id, parseTimestamp(row.last_played_at)]))
+}

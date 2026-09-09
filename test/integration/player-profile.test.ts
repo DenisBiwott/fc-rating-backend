@@ -54,6 +54,7 @@ describe('playerProfile', () => {
     expect(profile.goalsFor).toBe(0)
     expect(profile.goalsAgainst).toBe(0)
     expect(profile.isProvisional).toBe(true)
+    expect(profile.createdAt).toBeInstanceOf(Date)
   })
 
   it('reflects recorded matches', async () => {

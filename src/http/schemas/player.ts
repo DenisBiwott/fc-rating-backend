@@ -11,7 +11,14 @@ export const playerSchema = z.object({
   isActive: z.boolean(),
 })
 
-export const playerListResponseSchema = z.array(playerSchema)
+// A richer shape than playerSchema for the list endpoint only — lastPlayedAt would need an extra
+// query on every POST/PATCH response for a field those endpoints have no use for, so it's kept off
+// the shared playerSchema deliberately.
+export const playerListItemSchema = playerSchema.extend({
+  lastPlayedAt: z.iso.datetime().nullable(),
+})
+
+export const playerListResponseSchema = z.array(playerListItemSchema)
 
 export const createPlayerBodySchema = z.object({
   name: z.string().min(1),
@@ -37,6 +44,7 @@ export const playerProfileResponseSchema = z.object({
   playerId: z.string(),
   name: z.string(),
   isActive: z.boolean(),
+  createdAt: z.iso.datetime(),
   rating: z.number(),
   gamesPlayed: z.number(),
   wins: z.number(),

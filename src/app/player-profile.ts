@@ -14,6 +14,7 @@ export interface PlayerProfile {
   playerId: PlayerId
   name: string
   isActive: boolean
+  createdAt: Date
   rating: number
   gamesPlayed: number
   wins: number
@@ -53,6 +54,7 @@ export async function playerProfile(deps: Deps, playerId: string): Promise<Playe
     playerId: playerId as PlayerId,
     name: player.name,
     isActive: player.isActive,
+    createdAt: player.createdAt,
     rating: rating.rating,
     gamesPlayed: rating.gamesPlayed,
     wins: records.filter((record) => record.result === 'W').length,

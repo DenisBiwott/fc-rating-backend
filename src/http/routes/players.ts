@@ -64,7 +64,10 @@ export function registerPlayerRoutes(app: FastifyInstance, deps: Deps): void {
     },
     async (request) => {
       const players = await listPlayers(deps, omitUndefined(request.query))
-      return players.map(toPlayerDto)
+      return players.map((player) => ({
+        ...toPlayerDto(player),
+        lastPlayedAt: player.lastPlayedAt?.toISOString() ?? null,
+      }))
     },
   )
 
@@ -83,7 +86,7 @@ export function registerPlayerRoutes(app: FastifyInstance, deps: Deps): void {
     },
     async (request) => {
       const profile = await playerProfile(deps, request.params.id)
-      return { ...profile, form: [...profile.form] }
+      return { ...profile, form: [...profile.form], createdAt: profile.createdAt.toISOString() }
     },
   )
 
