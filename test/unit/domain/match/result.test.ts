@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resultFor, toMatchInput } from '../../../../src/domain/match/result.js'
+import { goalsAgainst, goalsFor, resultFor, toMatchInput } from '../../../../src/domain/match/result.js'
 import type { EffectiveMatch } from '../../../../src/domain/match/types.js'
 import { playerId } from '../factories.js'
 
@@ -29,6 +29,26 @@ describe('resultFor', () => {
     const draw: EffectiveMatch = { ...match, homeScore: 1, awayScore: 1 }
     expect(resultFor(draw, alice)).toBe('D')
     expect(resultFor(draw, bob)).toBe('D')
+  })
+})
+
+describe('goalsFor', () => {
+  it('returns the home score for the home player', () => {
+    expect(goalsFor(match, alice)).toBe(2)
+  })
+
+  it('returns the away score for the away player', () => {
+    expect(goalsFor(match, bob)).toBe(1)
+  })
+})
+
+describe('goalsAgainst', () => {
+  it('returns the away score for the home player', () => {
+    expect(goalsAgainst(match, alice)).toBe(1)
+  })
+
+  it('returns the home score for the away player', () => {
+    expect(goalsAgainst(match, bob)).toBe(2)
   })
 })
 

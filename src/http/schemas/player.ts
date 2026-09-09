@@ -44,6 +44,9 @@ export const playerProfileResponseSchema = z.object({
   losses: z.number(),
   form: z.array(matchResultSchema),
   streak: z.object({ result: matchResultSchema, length: z.number() }).nullable(),
+  bestStreak: z.object({ result: matchResultSchema, length: z.number() }).nullable(),
+  goalsFor: z.number(),
+  goalsAgainst: z.number(),
   isProvisional: z.boolean(),
 })
 

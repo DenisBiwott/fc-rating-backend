@@ -1,6 +1,6 @@
-import { currentStreak, isProvisional, recentForm } from '../domain/leaderboard/compute.js'
+import { bestStreak, currentStreak, isProvisional, recentForm } from '../domain/leaderboard/compute.js'
 import type { PlayerMatchRecord } from '../domain/leaderboard/types.js'
-import { resultFor } from '../domain/match/result.js'
+import { goalsAgainst, goalsFor, resultFor } from '../domain/match/result.js'
 import type { MatchResult } from '../domain/match/types.js'
 import type { PlayerId } from '../domain/rating/types.js'
 import { effectiveMatchesForPlayer } from '../infra/db/queries/match-effective.js'
@@ -21,6 +21,9 @@ export interface PlayerProfile {
   losses: number
   form: readonly MatchResult[]
   streak: { result: MatchResult; length: number } | null
+  bestStreak: { result: MatchResult; length: number } | null
+  goalsFor: number
+  goalsAgainst: number
   isProvisional: boolean
 }
 
@@ -57,6 +60,9 @@ export async function playerProfile(deps: Deps, playerId: string): Promise<Playe
     losses: records.filter((record) => record.result === 'L').length,
     form: recentForm(records, 5),
     streak: currentStreak(records),
+    bestStreak: bestStreak(records),
+    goalsFor: matches.reduce((sum, m) => sum + goalsFor(m, playerId as PlayerId), 0),
+    goalsAgainst: matches.reduce((sum, m) => sum + goalsAgainst(m, playerId as PlayerId), 0),
     isProvisional: isProvisional(rating.gamesPlayed, config.params.provisionalGames),
   }
 }

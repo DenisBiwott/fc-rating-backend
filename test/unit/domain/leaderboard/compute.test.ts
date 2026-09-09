@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  bestStreak,
   currentStreak,
   isProvisional,
   rankPlayers,
@@ -82,5 +83,33 @@ describe('currentStreak', () => {
       { sequence: 3, result: 'L' },
     ]
     expect(currentStreak(records)).toEqual({ result: 'L', length: 1 })
+  })
+})
+
+describe('bestStreak', () => {
+  it('returns null when no matches have been played', () => {
+    expect(bestStreak([])).toBeNull()
+  })
+
+  it('returns the single streak when there is only one', () => {
+    const records: PlayerMatchRecord[] = [
+      { sequence: 1, result: 'W' },
+      { sequence: 2, result: 'W' },
+    ]
+    expect(bestStreak(records)).toEqual({ result: 'W', length: 2 })
+  })
+
+  it('finds the longest streak even when it is not the most recent one', () => {
+    const records: PlayerMatchRecord[] = [
+      { sequence: 1, result: 'W' },
+      { sequence: 2, result: 'W' },
+      { sequence: 3, result: 'W' },
+      { sequence: 4, result: 'L' },
+      { sequence: 5, result: 'W' },
+      { sequence: 6, result: 'L' },
+    ]
+    // current streak here is L (length 1) — best is the earlier 3-game W run.
+    expect(currentStreak(records)).toEqual({ result: 'L', length: 1 })
+    expect(bestStreak(records)).toEqual({ result: 'W', length: 3 })
   })
 })

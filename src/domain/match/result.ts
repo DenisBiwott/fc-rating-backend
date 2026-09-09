@@ -11,6 +11,16 @@ export function resultFor(match: EffectiveMatch, playerId: PlayerId): MatchResul
   return 'D'
 }
 
+/** Goals scored by one player's side on an effective match. */
+export function goalsFor(match: EffectiveMatch, playerId: PlayerId): number {
+  return match.homePlayerId === playerId ? match.homeScore : match.awayScore
+}
+
+/** Goals conceded by one player's side on an effective match. */
+export function goalsAgainst(match: EffectiveMatch, playerId: PlayerId): number {
+  return match.homePlayerId === playerId ? match.awayScore : match.homeScore
+}
+
 /** Strips replay-irrelevant fields (id, sequence, isVoid) for feeding into the rating engine. */
 export function toMatchInput(match: EffectiveMatch): MatchInput {
   return {

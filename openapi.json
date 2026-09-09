@@ -457,6 +457,40 @@
                         }
                       ]
                     },
+                    "bestStreak": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "result": {
+                              "type": "string",
+                              "enum": [
+                                "W",
+                                "L",
+                                "D"
+                              ]
+                            },
+                            "length": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "result",
+                            "length"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "goalsFor": {
+                      "type": "number"
+                    },
+                    "goalsAgainst": {
+                      "type": "number"
+                    },
                     "isProvisional": {
                       "type": "boolean"
                     }
@@ -472,6 +506,9 @@
                     "losses",
                     "form",
                     "streak",
+                    "bestStreak",
+                    "goalsFor",
+                    "goalsAgainst",
                     "isProvisional"
                   ],
                   "additionalProperties": false

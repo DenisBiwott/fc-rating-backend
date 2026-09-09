@@ -41,3 +41,18 @@ export function currentStreak(records: readonly PlayerMatchRecord[]): StreakInfo
   }
   return { result: mostRecent.result, length }
 }
+
+/** The longest streak of any single result anywhere in the record; null if no matches. */
+export function bestStreak(records: readonly PlayerMatchRecord[]): StreakInfo | null {
+  const sorted = [...records].sort((a, b) => a.sequence - b.sequence)
+  let best: StreakInfo | null = null
+  let current: StreakInfo | null = null
+  for (const record of sorted) {
+    current =
+      current && current.result === record.result
+        ? { result: current.result, length: current.length + 1 }
+        : { result: record.result, length: 1 }
+    if (!best || current.length > best.length) best = current
+  }
+  return best
+}
