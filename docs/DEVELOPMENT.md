@@ -12,7 +12,7 @@
 ## Build order
 
 This repo is scaffolded from scratch, in commits, in this order (mirrors the original scaffold
-prompt so the reasoning survives past the first session). Steps 1–4 are done; step 5 is next.
+prompt so the reasoning survives past the first session). Steps 1–5 are done; step 6 is next.
 
 1. **Done.** Tooling — `tsconfig` (strict, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`),
    ESLint flat config with the domain-import boundary rule (see
@@ -27,12 +27,14 @@ prompt so the reasoning survives past the first session). Steps 1–4 are done; 
 4. **Done.** App use-cases (`src/app/*.ts`) — plain functions over `{ db, clock, ids, logger }`,
    integration-tested against a real Postgres database per test file (see
    [TESTING.md](TESTING.md)).
-5. **Next.** HTTP — Fastify routes, Zod schemas, cookie auth, RFC 9457 errors, pino request
-   logging, `/health`. Nothing in this repo is reachable over the network until this step.
-6. `scripts/generate-openapi.ts` → commit `openapi.json` at the repo root. This is the point the
-   frontend repo can start consuming a real contract instead of a hand-stubbed one.
-7. API tests (`fastify.inject`) for auth, roles, validation, and response-shape conformance to
-   `openapi.json`.
+5. **Done.** HTTP — Fastify routes, Zod schemas, cookie auth, RFC 9457 errors, pino request
+   logging, `/health`. Every route in the design doc's §6 table has a working endpoint —
+   `pnpm dev` reaches all of it. API-level tests (`test/api/*.test.ts`, `fastify.inject`) for
+   auth, roles, and validation landed alongside each route group rather than as a separate step
+   — see [TESTING.md](TESTING.md).
+6. **Next.** `scripts/generate-openapi.ts` → commit `openapi.json` at the repo root. This is the
+   point the frontend repo can start consuming a real contract instead of a hand-stubbed one.
+7. Response-shape conformance tests against the committed `openapi.json`.
 8. README, Docker, CI.
 
 Commit after each numbered step — each is independently reviewable and the domain/database/API
@@ -45,13 +47,14 @@ docker compose -f docker-compose.dev.yml up -d --wait   # postgres:16
 pnpm install
 pnpm db:migrate
 pnpm db:seed                       # idempotent — safe to re-run
+pnpm dev                                              # Fastify on $PORT (default 3000), watches for changes
 pnpm lint && pnpm typecheck && pnpm test              # fast, no database needed
-pnpm test:integration                                 # needs the postgres container running
+pnpm test:integration                                 # needs the postgres container running (also runs test/api/*)
 pnpm test:all                                         # both, in sequence
 ```
 
-`pnpm dev` doesn't exist yet — there's no HTTP server until step 5. Until then, use-cases are only
-reachable from a script or a test (`test/integration/helpers/deps.ts` shows how to wire `Deps`).
+`pnpm dev` needs `.env` copied from `.env.example` first (see [CONFIGURATION.md](CONFIGURATION.md)
+for what each var does) — `src/config.ts` fails fast at startup if one's missing or malformed.
 
 If Postgres was already running and something looks wrong (a stale migration, leftover data from
 manual `psql` poking), `pnpm db:reset` drops and recreates everything cleanly — see the scar about

@@ -12,12 +12,14 @@ Sports FC. Node 22 + TypeScript strict + Fastify + Drizzle ORM + PostgreSQL 16. 
 production-quality modular monolith, built as an engineering-learning project: correctness over
 speed, explicit over implicit, derived over cached, no premature infrastructure.
 
-**Status:** domain layer, database schema, and every app-layer use-case (`recordMatch`,
+**Status:** domain layer, database schema, every app-layer use-case (`recordMatch`,
 `previewMatch`, `leaderboard`, `voidMatch`, `correctMatch`, `rebuildConfig`, `openSession`,
-`closeSession`, `sessionSummary`, `playerProfile`, `ratingHistory`) are built and tested against a
-live Postgres — build-order steps 1–4. **Not started: HTTP** (step 5 — Fastify routes, Zod
-schemas, cookie auth, `openapi.json` generation) — nothing in this repo is reachable over the
-network yet. Build order lives in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The full product/
+`closeSession`, `sessionSummary`, `playerProfile`, `ratingHistory`), and the full HTTP layer
+(Fastify routes, Zod schemas, cookie auth, RFC 9457 errors) are built and tested against a live
+Postgres — build-order steps 1–5. Every route in the design doc's §6 table has a working endpoint;
+run `pnpm dev` and the API is reachable. **Not started: `openapi.json` generation** (step 6) — the
+frontend repo is still blocked on a real contract instead of a hand-stubbed one. Build order lives
+in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The full product/
 data/API design lives in `../fc-rating-platform-design.md` (one directory up, outside this repo —
 a planning document, not committed here). This repo's docs are a distillation of the sections
 that govern it; if the two ever disagree, treat that as a bug in this repo's docs and flag it

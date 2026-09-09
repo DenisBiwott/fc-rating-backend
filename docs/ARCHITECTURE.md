@@ -19,14 +19,14 @@ src/
     db/              # drizzle schema, migrations, query modules (one file per aggregate)
     auth/            # password hashing
     ids.ts, clock.ts, logger.ts, errors.ts   # injectable deps + Postgres error translation
-  http/              # not started — Fastify routes, Zod schemas, RFC 9457 errors (step 5)
+  http/              # Fastify routes, Zod schemas, RFC 9457 errors, cookie auth (step 5, done)
 scripts/
   migrate.ts, seed.ts, reset-db.ts
-  generate-openapi.ts   # not started — step 5/6
+  generate-openapi.ts   # not started — step 6
 test/
   unit/              # domain, plus the lint-boundary behavioral test
   integration/       # app + db, one fresh Postgres *database* per test file (see helpers/test-db.ts)
-  api/                # not started — fastify inject against the full server (step 5/8)
+  api/                # fastify inject against the full server (step 5, done) — one file per route group
 ```
 
 The layout above is the stable shape (what each top-level folder is _for_); read the directory
