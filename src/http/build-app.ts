@@ -10,6 +10,7 @@ import { registerHealthRoutes } from './routes/health.js'
 import { registerLeaderboardRoutes } from './routes/leaderboard.js'
 import { registerMatchRoutes } from './routes/matches.js'
 import { registerPlayerRoutes } from './routes/players.js'
+import { registerRatingConfigRoutes } from './routes/rating-configs.js'
 import { registerSessionRoutes } from './routes/sessions.js'
 
 function loggerOptions(
@@ -42,6 +43,7 @@ export function buildApp(deps: Deps, config: Config): FastifyInstance {
   registerMatchRoutes(app, deps)
   registerLeaderboardRoutes(app, deps)
   registerSessionRoutes(app, deps)
+  registerRatingConfigRoutes(app, deps)
 
   return app
 }

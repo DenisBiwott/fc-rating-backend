@@ -6,6 +6,7 @@ import {
   MatchValidationError,
   PlayerNameConflictError,
   PlayerNotFoundError,
+  RatingConfigNameConflictError,
   SessionAlreadyClosedError,
   SessionAlreadyOpenError,
   SessionNotFoundError,
@@ -55,6 +56,10 @@ const errorMappings: readonly [test: (error: unknown) => boolean, mapping: Probl
   [
     (e) => e instanceof NoActiveRatingConfigError,
     { status: 500, type: 'internal-error', title: 'Internal Server Error' },
+  ],
+  [
+    (e) => e instanceof RatingConfigNameConflictError,
+    { status: 409, type: 'conflict', title: 'Conflict' },
   ],
 ]
 

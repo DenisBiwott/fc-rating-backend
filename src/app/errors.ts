@@ -53,3 +53,10 @@ export class PlayerNameConflictError extends Error {
     this.name = 'PlayerNameConflictError'
   }
 }
+
+export class RatingConfigNameConflictError extends Error {
+  constructor(name: string) {
+    super(`A rating config named "${name}" already exists.`)
+    this.name = 'RatingConfigNameConflictError'
+  }
+}
