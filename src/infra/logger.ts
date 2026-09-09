@@ -20,3 +20,26 @@ export const consoleLogger: Logger = {
     console.error(message, meta ?? {})
   },
 }
+
+/** pino's `LogFn` puts the merging object first (`logger.info(meta, message)`), the reverse of
+ * this file's `(message, meta)` order — this adapter is the "real pino instance" this file's own
+ * doc comment refers to, not a bare assignment. */
+export interface PinoLike {
+  info(meta: Record<string, unknown>, message: string): void
+  warn(meta: Record<string, unknown>, message: string): void
+  error(meta: Record<string, unknown>, message: string): void
+}
+
+export function fromPino(pino: PinoLike): Logger {
+  return {
+    info: (message, meta) => {
+      pino.info(meta ?? {}, message)
+    },
+    warn: (message, meta) => {
+      pino.warn(meta ?? {}, message)
+    },
+    error: (message, meta) => {
+      pino.error(meta ?? {}, message)
+    },
+  }
+}

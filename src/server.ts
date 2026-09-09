@@ -1,0 +1,26 @@
+import 'dotenv/config'
+import pino from 'pino'
+import { loadConfig } from './config.js'
+import { buildApp } from './http/build-app.js'
+import { systemClock } from './infra/clock.js'
+import { createDbClient } from './infra/db/client.js'
+import { systemIds } from './infra/ids.js'
+import { fromPino } from './infra/logger.js'
+
+const config = loadConfig()
+const db = createDbClient(config.DATABASE_URL)
+
+const pinoLogger = pino({
+  level: config.NODE_ENV === 'production' ? 'info' : 'debug',
+  ...(config.NODE_ENV === 'development' ? { transport: { target: 'pino-pretty' } } : {}),
+})
+
+const app = buildApp(
+  { db, clock: systemClock, ids: systemIds, logger: fromPino(pinoLogger) },
+  config,
+)
+
+app.listen({ port: config.PORT, host: '0.0.0.0' }).catch((error: unknown) => {
+  app.log.error(error)
+  process.exit(1)
+})

@@ -66,7 +66,7 @@ export default defineConfig(
       '@typescript-eslint/explicit-function-return-type': 'off',
     },
   },
-  // @ts-ignore
+  // @ts-expect-error — defineConfig's flat-config item type doesn't model this plain object shape
   domainBoundaryRule,
   prettier,
 )

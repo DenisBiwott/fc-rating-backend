@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config'
 // fast `pnpm test` loop that domain work iterates against all day. See docs/DEVELOPMENT.md.
 export default defineConfig({
   test: {
-    include: ['test/integration/**/*.test.ts'],
+    include: ['test/integration/**/*.test.ts', 'test/api/**/*.test.ts'],
     testTimeout: 15000,
   },
 })
