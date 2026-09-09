@@ -84,14 +84,30 @@ function sendAuthProblem(
     })
 }
 
+/** For handlers behind requireRole(...) that need to know who's acting (recordedBy, adjustedBy, createdBy). Throws if the preHandler wasn't applied to this route — a wiring bug, not a runtime possibility. */
+export function sessionUserOrThrow(request: FastifyRequest): SessionUser {
+  if (request.sessionUser === undefined) {
+    throw new Error('sessionUserOrThrow: no session on request — is requireRole() missing from this route?')
+  }
+  return request.sessionUser
+}
+
 /**
  * Role preHandler factory — admin > recorder > viewer, per CLAUDE.md#auth (a small ordinal check,
  * not a permissions library). 401 when there's no valid session, 403 when there is one but it's
  * under-ranked. Stashes the session on request.sessionUser for handlers that need to know who's
  * acting (recordedBy, adjustedBy, createdBy).
  */
+/**
+ * The returned preHandler must be async (or otherwise return a thenable) — Fastify's hook runner
+ * only advances the chain by awaiting a returned promise or invoking the hook's `done` callback.
+ * A plain synchronous function that returns void does neither, so the chain silently stalls: the
+ * 401/403 branches "work" only by accident, because reply.send() finishes the HTTP response
+ * directly regardless of the hook chain, but the success path (falling through to the route
+ * handler) would hang forever without this.
+ */
 export function requireRole(minRole: Role) {
-  return (request: FastifyRequest, reply: FastifyReply): void => {
+  return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
     const user = getSessionUser(request)
     if (user === undefined) {
       sendAuthProblem(reply, request, 401, 'Login required.')

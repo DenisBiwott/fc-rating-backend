@@ -2,6 +2,7 @@ import { eq, sql } from 'drizzle-orm'
 import type { Queryable, Transaction } from '../../../app/types.js'
 import type { RatedPlayer } from '../../../domain/leaderboard/types.js'
 import type { PlayerId, RatingState, RatingTable } from '../../../domain/rating/types.js'
+import { parseTimestamp } from '../raw-timestamp.js'
 import { ratingSnapshots } from '../schema.js'
 
 type LatestSnapshotRow = {
@@ -110,7 +111,7 @@ export interface RatingHistoryEntry {
 type RatingHistoryRow = {
   match_id: string
   sequence: number
-  played_at: Date
+  played_at: string
   rating_before: number
   rating_after: number
   delta: number
@@ -133,7 +134,7 @@ export async function ratingHistoryForPlayer(
   return rows.map((row) => ({
     matchId: row.match_id,
     sequence: row.sequence,
-    playedAt: row.played_at,
+    playedAt: parseTimestamp(row.played_at),
     before: row.rating_before,
     after: row.rating_after,
     delta: row.delta,

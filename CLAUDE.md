@@ -66,6 +66,22 @@ constraint throws `DrizzleQueryError`, not the underlying `PostgresError`.** The
   `matches.sequence`/`match_adjustments.sequence`, the only bigint columns in this schema and both
   safely within `Number` range for this app's scale — don't reintroduce a raw connection that skips
   this config.
+- **A Fastify preHandler must be `async` (or otherwise return a thenable), never a plain
+  synchronous function returning `void`.** Fastify's hook runner only advances the chain by
+  awaiting a returned promise or invoking the hook's `done` callback — a sync function that
+  returns `undefined` does neither, so the chain silently stalls forever on the success path. The
+  failure path can look deceptively fine: calling `reply.send()` finishes the HTTP response
+  directly, independent of the hook chain, so a preHandler's 401/403 branch "works" while its
+  success branch (falling through to the route handler) hangs every request. See
+  `src/http/plugins/auth.ts`'s `requireRole`.
+- **Drizzle's postgres-js driver disables postgres.js's built-in timestamp/date parsing on the
+  shared connection** (`drizzle-orm/postgres-js/driver.js`'s `construct()` overwrites
+  `client.options.parsers` for date/time OIDs with an identity function, so its own query builder
+  can do schema-aware date mapping instead). A raw `db.execute(sql\`...\`)` query has no Drizzle
+  column metadata to map with, so any timestamp column it selects comes back as Postgres's text
+  format (`'2026-09-09 08:01:00.924+00'`), not a JS `Date` — unlike an identical-looking column
+  read through `.select().from(table)`. Convert explicitly with `src/infra/db/raw-timestamp.ts`'s
+  `parseTimestamp()` wherever a raw query selects one.
 
 ## Scope boundaries
 

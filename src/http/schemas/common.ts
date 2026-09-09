@@ -14,3 +14,16 @@ export const problemDetailsSchema = z.looseObject({
   detail: z.string().optional(),
   instance: z.string().optional(),
 })
+
+/** `?cursor=&limit=` per docs/API.md — cursor is always a match `sequence`. */
+export const paginationQuerySchema = z.object({
+  cursor: z.coerce.number().int().nonnegative().optional(),
+  limit: z.coerce.number().int().positive().max(100).optional(),
+})
+
+export function paginatedResponseSchema<T extends z.ZodType>(itemSchema: T) {
+  return z.object({
+    items: z.array(itemSchema),
+    nextCursor: z.number().nullable(),
+  })
+}

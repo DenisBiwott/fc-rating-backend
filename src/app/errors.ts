@@ -46,3 +46,10 @@ export class InvalidCredentialsError extends Error {
     this.name = 'InvalidCredentialsError'
   }
 }
+
+export class PlayerNameConflictError extends Error {
+  constructor(name: string) {
+    super(`A player named "${name}" already exists.`)
+    this.name = 'PlayerNameConflictError'
+  }
+}

@@ -4,6 +4,7 @@ import {
   InvalidCredentialsError,
   MatchNotFoundError,
   MatchValidationError,
+  PlayerNameConflictError,
   PlayerNotFoundError,
   SessionAlreadyClosedError,
   SessionAlreadyOpenError,
@@ -46,6 +47,10 @@ const errorMappings: readonly [test: (error: unknown) => boolean, mapping: Probl
   [
     (e) => e instanceof InvalidCredentialsError,
     { status: 401, type: 'unauthorized', title: 'Unauthorized' },
+  ],
+  [
+    (e) => e instanceof PlayerNameConflictError,
+    { status: 409, type: 'conflict', title: 'Conflict' },
   ],
   [
     (e) => e instanceof NoActiveRatingConfigError,
