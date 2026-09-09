@@ -1,0 +1,22 @@
+import { z } from 'zod'
+
+const matchResultSchema = z.enum(['W', 'L', 'D'])
+
+const leaderboardEntrySchema = z.object({
+  rank: z.number(),
+  playerId: z.string(),
+  rating: z.number(),
+  gamesPlayed: z.number(),
+  wins: z.number(),
+  draws: z.number(),
+  losses: z.number(),
+  winPct: z.number(),
+  form: z.array(matchResultSchema),
+  streak: z.object({ result: matchResultSchema, length: z.number() }).nullable(),
+  isProvisional: z.boolean(),
+})
+
+export const leaderboardResponseSchema = z.object({
+  entries: z.array(leaderboardEntrySchema),
+  meanRating: z.number(),
+})

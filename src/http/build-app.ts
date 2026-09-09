@@ -7,8 +7,10 @@ import { registerAuthDecorator } from './plugins/auth.js'
 import { registerErrorHandler } from './plugins/error-handler.js'
 import { registerAuthRoutes } from './routes/auth.js'
 import { registerHealthRoutes } from './routes/health.js'
+import { registerLeaderboardRoutes } from './routes/leaderboard.js'
 import { registerMatchRoutes } from './routes/matches.js'
 import { registerPlayerRoutes } from './routes/players.js'
+import { registerSessionRoutes } from './routes/sessions.js'
 
 function loggerOptions(
   nodeEnv: Config['NODE_ENV'],
@@ -38,6 +40,8 @@ export function buildApp(deps: Deps, config: Config): FastifyInstance {
   registerAuthRoutes(app, deps)
   registerPlayerRoutes(app, deps)
   registerMatchRoutes(app, deps)
+  registerLeaderboardRoutes(app, deps)
+  registerSessionRoutes(app, deps)
 
   return app
 }
