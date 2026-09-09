@@ -10,7 +10,14 @@ const healthResponseSchema = z.object({ status: z.literal('ok'), db: z.literal('
 export function registerHealthRoutes(app: FastifyInstance, deps: Deps): void {
   app.withTypeProvider<ZodTypeProvider>().get(
     '/health',
-    { schema: { response: { 200: healthResponseSchema } } },
+    {
+      schema: {
+        tags: ['ops'],
+        operationId: 'getHealth',
+        summary: 'Check API and database health',
+        response: { 200: healthResponseSchema },
+      },
+    },
     async () => {
       await deps.db.execute(sql`select 1`)
       return { status: 'ok', db: 'ok' } as const

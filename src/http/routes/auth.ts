@@ -11,7 +11,15 @@ export function registerAuthRoutes(app: FastifyInstance, deps: Deps): void {
 
   typed.post(
     '/auth/login',
-    { schema: { body: loginBodySchema, response: { 200: userEnvelopeSchema } } },
+    {
+      schema: {
+        tags: ['auth'],
+        operationId: 'login',
+        summary: 'Log in with the shared admin password',
+        body: loginBodySchema,
+        response: { 200: userEnvelopeSchema },
+      },
+    },
     async (request, reply) => {
       const user = await login(deps, { password: request.body.password })
       setSessionCookie(reply, { userId: user.id, name: user.name, role: user.role })
@@ -19,14 +27,25 @@ export function registerAuthRoutes(app: FastifyInstance, deps: Deps): void {
     },
   )
 
-  typed.post('/auth/logout', async (_request, reply) => {
-    clearSessionCookie(reply)
-    return reply.code(204).send()
-  })
+  typed.post(
+    '/auth/logout',
+    { schema: { tags: ['auth'], operationId: 'logout', summary: 'Clear the session cookie' } },
+    async (_request, reply) => {
+      clearSessionCookie(reply)
+      return reply.code(204).send()
+    },
+  )
 
   typed.get(
     '/auth/me',
-    { schema: { response: { 200: userEnvelopeSchema, 401: problemDetailsSchema } } },
+    {
+      schema: {
+        tags: ['auth'],
+        operationId: 'getCurrentUser',
+        summary: "Get the current session's user, if any",
+        response: { 200: userEnvelopeSchema, 401: problemDetailsSchema },
+      },
+    },
     (request, reply) => {
       const session = getSessionUser(request)
       if (session === undefined) {

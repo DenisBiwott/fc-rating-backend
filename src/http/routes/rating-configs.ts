@@ -34,7 +34,13 @@ export function registerRatingConfigRoutes(app: FastifyInstance, deps: Deps): vo
     '/rating-configs',
     {
       preHandler: requireRole('admin'),
-      schema: { response: { 200: ratingConfigListResponseSchema } },
+      schema: {
+        tags: ['rating-configs'],
+        operationId: 'listRatingConfigs',
+        summary: 'List rating configs (requires admin role)',
+        security: [{ sessionCookie: [] }],
+        response: { 200: ratingConfigListResponseSchema },
+      },
     },
     async () => (await listRatingConfigs(deps)).map(toRatingConfigDto),
   )
@@ -43,7 +49,14 @@ export function registerRatingConfigRoutes(app: FastifyInstance, deps: Deps): vo
     '/rating-configs',
     {
       preHandler: requireRole('admin'),
-      schema: { body: createRatingConfigBodySchema, response: { 201: ratingConfigSchema } },
+      schema: {
+        tags: ['rating-configs'],
+        operationId: 'createRatingConfig',
+        summary: 'Create a rating config (requires admin role)',
+        security: [{ sessionCookie: [] }],
+        body: createRatingConfigBodySchema,
+        response: { 201: ratingConfigSchema },
+      },
     },
     async (request, reply) => {
       const config = await createRatingConfig(deps, request.body)
@@ -55,7 +68,14 @@ export function registerRatingConfigRoutes(app: FastifyInstance, deps: Deps): vo
     '/rating-configs/:id/rebuild',
     {
       preHandler: requireRole('admin'),
-      schema: { params: ratingConfigParamsSchema, response: { 200: rebuildResponseSchema } },
+      schema: {
+        tags: ['rating-configs'],
+        operationId: 'rebuildRatingConfig',
+        summary: 'Rebuild rating snapshots for a config by replaying matches (requires admin role)',
+        security: [{ sessionCookie: [] }],
+        params: ratingConfigParamsSchema,
+        response: { 200: rebuildResponseSchema },
+      },
     },
     async (request) => rebuildConfig(deps, request.params.id),
   )
@@ -65,6 +85,10 @@ export function registerRatingConfigRoutes(app: FastifyInstance, deps: Deps): vo
     {
       preHandler: requireRole('admin'),
       schema: {
+        tags: ['rating-configs'],
+        operationId: 'getRatingConfigLeaderboard',
+        summary: 'Preview the leaderboard a rating config would produce (requires admin role)',
+        security: [{ sessionCookie: [] }],
         params: ratingConfigParamsSchema,
         response: { 200: whatIfLeaderboardResponseSchema },
       },

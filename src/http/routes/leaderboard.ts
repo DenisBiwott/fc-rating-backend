@@ -12,7 +12,13 @@ export function registerLeaderboardRoutes(app: FastifyInstance, deps: Deps): voi
     '/leaderboard',
     {
       preHandler: requireRole('viewer'),
-      schema: { response: { 200: leaderboardResponseSchema } },
+      schema: {
+        tags: ['leaderboard'],
+        operationId: 'getLeaderboard',
+        summary: 'Get the current leaderboard',
+        security: [{ sessionCookie: [] }],
+        response: { 200: leaderboardResponseSchema },
+      },
     },
     async () => {
       const result = await leaderboard(deps)

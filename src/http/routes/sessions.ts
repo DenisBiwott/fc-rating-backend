@@ -47,7 +47,14 @@ export function registerSessionRoutes(app: FastifyInstance, deps: Deps): void {
     '/sessions',
     {
       preHandler: requireRole('recorder'),
-      schema: { body: openSessionBodySchema, response: { 201: sessionSchema } },
+      schema: {
+        tags: ['sessions'],
+        operationId: 'openSession',
+        summary: 'Open a new session (requires recorder role)',
+        security: [{ sessionCookie: [] }],
+        body: openSessionBodySchema,
+        response: { 201: sessionSchema },
+      },
     },
     async (request, reply) => {
       const { userId } = sessionUserOrThrow(request)
@@ -60,7 +67,13 @@ export function registerSessionRoutes(app: FastifyInstance, deps: Deps): void {
     '/sessions',
     {
       preHandler: requireRole('viewer'),
-      schema: { response: { 200: sessionListResponseSchema } },
+      schema: {
+        tags: ['sessions'],
+        operationId: 'listSessions',
+        summary: 'List sessions',
+        security: [{ sessionCookie: [] }],
+        response: { 200: sessionListResponseSchema },
+      },
     },
     async () => (await listSessions(deps)).map(toSessionDto),
   )
@@ -69,7 +82,13 @@ export function registerSessionRoutes(app: FastifyInstance, deps: Deps): void {
     '/sessions/current',
     {
       preHandler: requireRole('viewer'),
-      schema: { response: { 200: sessionSchema, 204: z.undefined() } },
+      schema: {
+        tags: ['sessions'],
+        operationId: 'getCurrentSession',
+        summary: 'Get the currently open session, if any (204 if none)',
+        security: [{ sessionCookie: [] }],
+        response: { 200: sessionSchema, 204: z.undefined() },
+      },
     },
     async (_request, reply) => {
       const session = await currentSession(deps)
@@ -85,7 +104,14 @@ export function registerSessionRoutes(app: FastifyInstance, deps: Deps): void {
     '/sessions/:id',
     {
       preHandler: requireRole('viewer'),
-      schema: { params: sessionParamsSchema, response: { 200: sessionSummaryResponseSchema } },
+      schema: {
+        tags: ['sessions'],
+        operationId: 'getSessionSummary',
+        summary: 'Get a session summary',
+        security: [{ sessionCookie: [] }],
+        params: sessionParamsSchema,
+        response: { 200: sessionSummaryResponseSchema },
+      },
     },
     async (request) => toSessionSummaryDto(await sessionSummary(deps, request.params.id)),
   )
@@ -94,7 +120,14 @@ export function registerSessionRoutes(app: FastifyInstance, deps: Deps): void {
     '/sessions/:id/close',
     {
       preHandler: requireRole('recorder'),
-      schema: { params: sessionParamsSchema, response: { 200: sessionSchema } },
+      schema: {
+        tags: ['sessions'],
+        operationId: 'closeSession',
+        summary: 'Close a session (requires recorder role)',
+        security: [{ sessionCookie: [] }],
+        params: sessionParamsSchema,
+        response: { 200: sessionSchema },
+      },
     },
     async (request) => toSessionDto(await closeSession(deps, { sessionId: request.params.id })),
   )

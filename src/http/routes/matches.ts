@@ -60,7 +60,14 @@ export function registerMatchRoutes(app: FastifyInstance, deps: Deps): void {
     '/matches/preview',
     {
       preHandler: requireRole('recorder'),
-      schema: { body: previewMatchBodySchema, response: { 200: matchOutcomeSchema } },
+      schema: {
+        tags: ['matches'],
+        operationId: 'previewMatch',
+        summary: 'Preview a match outcome without recording it (requires recorder role)',
+        security: [{ sessionCookie: [] }],
+        body: previewMatchBodySchema,
+        response: { 200: matchOutcomeSchema },
+      },
     },
     async (request) => previewMatch(deps, request.body),
   )
@@ -69,7 +76,14 @@ export function registerMatchRoutes(app: FastifyInstance, deps: Deps): void {
     '/matches',
     {
       preHandler: requireRole('recorder'),
-      schema: { body: recordMatchBodySchema, response: { 200: recordMatchResponseSchema } },
+      schema: {
+        tags: ['matches'],
+        operationId: 'recordMatch',
+        summary: 'Record a match result (requires recorder role); idempotent on id',
+        security: [{ sessionCookie: [] }],
+        body: recordMatchBodySchema,
+        response: { 200: recordMatchResponseSchema },
+      },
     },
     async (request) => {
       const { userId } = sessionUserOrThrow(request)
@@ -94,7 +108,14 @@ export function registerMatchRoutes(app: FastifyInstance, deps: Deps): void {
     '/matches',
     {
       preHandler: requireRole('viewer'),
-      schema: { querystring: listMatchesQuerySchema, response: { 200: listMatchesResponseSchema } },
+      schema: {
+        tags: ['matches'],
+        operationId: 'listMatches',
+        summary: 'List matches, cursor-paginated',
+        security: [{ sessionCookie: [] }],
+        querystring: listMatchesQuerySchema,
+        response: { 200: listMatchesResponseSchema },
+      },
     },
     async (request) => serializeMatchList(await listMatches(deps, omitUndefined(request.query))),
   )
@@ -103,7 +124,14 @@ export function registerMatchRoutes(app: FastifyInstance, deps: Deps): void {
     '/matches/:id',
     {
       preHandler: requireRole('viewer'),
-      schema: { params: matchParamsSchema, response: { 200: matchDetailResponseSchema } },
+      schema: {
+        tags: ['matches'],
+        operationId: 'getMatch',
+        summary: 'Get a single match and its adjustment history',
+        security: [{ sessionCookie: [] }],
+        params: matchParamsSchema,
+        response: { 200: matchDetailResponseSchema },
+      },
     },
     async (request) => serializeMatchDetail(await matchDetail(deps, request.params.id)),
   )
@@ -113,6 +141,10 @@ export function registerMatchRoutes(app: FastifyInstance, deps: Deps): void {
     {
       preHandler: requireRole('admin'),
       schema: {
+        tags: ['matches'],
+        operationId: 'voidMatch',
+        summary: 'Void a match (requires admin role)',
+        security: [{ sessionCookie: [] }],
         params: matchParamsSchema,
         body: voidMatchBodySchema,
         response: { 200: adjustmentResultResponseSchema },
@@ -134,6 +166,10 @@ export function registerMatchRoutes(app: FastifyInstance, deps: Deps): void {
     {
       preHandler: requireRole('admin'),
       schema: {
+        tags: ['matches'],
+        operationId: 'correctMatch',
+        summary: 'Correct a match (requires admin role)',
+        security: [{ sessionCookie: [] }],
         params: matchParamsSchema,
         body: correctMatchBodySchema,
         response: { 200: adjustmentResultResponseSchema },
