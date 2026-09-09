@@ -14,12 +14,16 @@ speed, explicit over implicit, derived over cached, no premature infrastructure.
 
 **Status:** domain layer, database schema, every app-layer use-case (`recordMatch`,
 `previewMatch`, `leaderboard`, `voidMatch`, `correctMatch`, `rebuildConfig`, `openSession`,
-`closeSession`, `sessionSummary`, `playerProfile`, `ratingHistory`), and the full HTTP layer
-(Fastify routes, Zod schemas, cookie auth, RFC 9457 errors) are built and tested against a live
-Postgres — build-order steps 1–5. Every route in the design doc's §6 table has a working endpoint;
-run `pnpm dev` and the API is reachable. **Not started: `openapi.json` generation** (step 6) — the
-frontend repo is still blocked on a real contract instead of a hand-stubbed one. Build order lives
-in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The full product/
+`closeSession`, `sessionSummary`, `playerProfile`, `ratingHistory`), the full HTTP layer (Fastify
+routes, Zod schemas, cookie auth, RFC 9457 errors), and `openapi.json` generation
+(`scripts/generate-openapi.ts`, via `@fastify/swagger` + `fastify-type-provider-zod`) are built and
+tested against a live Postgres — build-order steps 1–6. Every route in the design doc's §6 table
+has a working endpoint and a generated OpenAPI 3.1 entry; run `pnpm dev` and the API is reachable,
+or `pnpm generate:openapi` to regenerate the committed contract. `pnpm generate:openapi:check`
+fails if the committed file is stale, but isn't wired into CI yet — no `.github/` directory exists;
+that's step 8. **Not started: response-shape conformance tests against the committed
+`openapi.json`** (step 7). Build order lives in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The
+full product/
 data/API design lives in `../fc-rating-platform-design.md` (one directory up, outside this repo —
 a planning document, not committed here). This repo's docs are a distillation of the sections
 that govern it; if the two ever disagree, treat that as a bug in this repo's docs and flag it
@@ -84,6 +88,17 @@ constraint throws `DrizzleQueryError`, not the underlying `PostgresError`.** The
   format (`'2026-09-09 08:01:00.924+00'`), not a JS `Date` — unlike an identical-looking column
   read through `.select().from(table)`. Convert explicitly with `src/infra/db/raw-timestamp.ts`'s
   `parseTimestamp()` wherever a raw query selects one.
+- **A route registered synchronously (a bare `app.get()`/`app.post()`) runs before any pending
+  `app.register(...)` plugin's body has executed.** Fastify's `onRoute` hooks fire once, at the
+  moment a route is added, over whatever hooks already exist at that instant — they never fire
+  retroactively. `app.register(...)` (including `@fastify/swagger`, which attaches its `onRoute`
+  hook from inside its own plugin body) is deferred to avvio's boot queue rather than run inline,
+  so a route added in the same synchronous tick — even textually after the `register(...)` call —
+  is invisible to a hook that plugin hasn't attached yet. The route itself still works
+  (`app.printRoutes()` shows it, real requests are served correctly); only anything depending on
+  `onRoute` firing (schema collection for `app.swagger()`, here) silently sees nothing. Fixed by
+  wrapping route registration in `app.after(...)`, which defers until every plugin registered
+  above it has finished loading. See `src/http/build-app.ts`.
 
 ## Scope boundaries
 
