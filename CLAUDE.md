@@ -33,19 +33,29 @@ the frontend's dev origin failed outright, the cookie never set — fixed by reg
 `lastPlayedAt` (`lastPlayedAtByPlayer` in `src/infra/db/queries/match-effective.ts`, a
 `MAX(played_at)` across `match_effective`, one new query) — both added for the frontend's
 player-profile/roster screens (`fc-rating-frontend/CLAUDE.md`'s Phase 4). 115 tests pass (was 106).
-**Decided 2026-09-10, not yet built:** viewing (every GET route — leaderboard, players, profiles,
-matches, sessions) becomes public, no login required; mutations stay admin-gated (today
-"admin does everything" is only true by accident — it's the sole account that can exist, since
-there's no route to provision `recorder`/`viewer` accounts). `requireRole()`'s ordinal hierarchy
-(`viewer:0 < recorder:1 < admin:2`, `src/http/plugins/auth.ts`) already means admin satisfies
-every check, so only the `requireRole('viewer')` preHandlers on GET routes need to go — nothing
-else about the role system changes, `recorder` stays in the type system unused rather than
-collapsed away. Whether `GET /rating-configs` goes public too (vs. staying admin-gated as
-config/tuning data, not player data) is still open. Also decided: 2c player creation ships
-against the already-supported `POST /players` (its rating-override control stays dropped — no
-per-player rating concept, ratings are derived); 2d player delete ships, gated to players with
-zero matches only; 2e void-match gets a real dry-run preview (a new capability — `voidMatch()`
-always commits today, no rollback-only path exists).
+**2026-09-10 build, all shipped except the access-model change (below):** `rankPlayers()`
+(`src/domain/leaderboard/compute.ts`) now sorts strictly-0-game players to the bottom regardless
+of rating — provisional (1-9 game) players are unaffected. `DELETE /players/:id` (admin) hard-
+deletes a player, gated on a genuine "has this player ever appeared in `matches`" check
+(`playerHasMatches`, `src/infra/db/queries/matches.ts`) rather than the replay-derived
+`gamesPlayed` counter — a player whose only match was later voided shows `gamesPlayed: 0` but
+still has a permanent row in the append-only `matches` table (FK, no cascade), so the literal-
+row check is what avoids a raw FK-violation 500 instead of a clean 409; `player-profile.ts`'s
+comment and `docs/ARCHITECTURE.md#domain-model` now read "never deleted once they've played,"
+not an absolute. `GET /matches/:id/void-preview` (admin) is a genuine new capability — a pure,
+non-persisting replay (same shape as `what-if-leaderboard.ts`) that simulates voiding a match by
+excluding it from the effective log fed to `replay()`; `diffRanks` moved out of `record-match.ts`
+into `replay.ts` so both the real record path and this preview share one rank-diffing
+implementation. Also found and fixed: `@fastify/cors` defaults `methods` to `GET,HEAD,POST` only
+— PATCH/DELETE 405'd at the browser's preflight, latent since every prior cross-origin
+verification only exercised GET/POST; now explicit
+(`methods: ['GET','POST','PATCH','DELETE']`, `src/http/build-app.ts`). 128 tests pass (was 115).
+**Still open, not yet built: the public-viewing access-model change** — every GET route becomes
+public, mutations stay admin-gated; `requireRole()`'s ordinal hierarchy already means admin
+satisfies every check, so only the `requireRole('viewer')` preHandlers on GET routes need to go.
+Denis confirmed `GET /rating-configs` stays admin-gated (config/tuning data, not player data) —
+already true today, all 4 of its routes are `admin`-only, so no code change needed there either
+way.
 
 Build order lives in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The
 full product/
