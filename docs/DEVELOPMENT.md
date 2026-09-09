@@ -12,7 +12,7 @@
 ## Build order
 
 This repo is scaffolded from scratch, in commits, in this order (mirrors the original scaffold
-prompt so the reasoning survives past the first session). Steps 1–5 are done; step 6 is next.
+prompt so the reasoning survives past the first session). Steps 1–6 are done; step 7 is next.
 
 1. **Done.** Tooling — `tsconfig` (strict, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`),
    ESLint flat config with the domain-import boundary rule (see
@@ -32,10 +32,15 @@ prompt so the reasoning survives past the first session). Steps 1–5 are done; 
    `pnpm dev` reaches all of it. API-level tests (`test/api/*.test.ts`, `fastify.inject`) for
    auth, roles, and validation landed alongside each route group rather than as a separate step
    — see [TESTING.md](TESTING.md).
-6. **Next.** `scripts/generate-openapi.ts` → commit `openapi.json` at the repo root. This is the
-   point the frontend repo can start consuming a real contract instead of a hand-stubbed one.
-7. Response-shape conformance tests against the committed `openapi.json`.
-8. README, Docker, CI.
+6. **Done.** `scripts/generate-openapi.ts` (via `@fastify/swagger` +
+   `fastify-type-provider-zod`'s `jsonSchemaTransform`) generates `openapi.json` at the repo
+   root — 21 paths, 26 operations, unique `operationId`s, `security: [{ sessionCookie: [] }]` on
+   every role-gated route — and it's committed. `pnpm generate:openapi:check` compares a fresh
+   generate against the committed file (no write) but isn't wired into CI yet — that's step 8.
+   This is the point the frontend repo started consuming a real contract instead of a
+   hand-stubbed one.
+7. **Next.** Response-shape conformance tests against the committed `openapi.json`.
+8. README, Docker, CI (including wiring `generate:openapi:check` into the CI workflow).
 
 Commit after each numbered step — each is independently reviewable and the domain/database/API
 layers are genuinely separable pieces of learning.
