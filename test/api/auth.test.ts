@@ -65,6 +65,31 @@ describe('POST /auth/login', () => {
 
     await app.close()
   })
+
+  it('rate-limits after 5 attempts from the same IP within the window', async () => {
+    const app = buildTestApp(db)
+
+    for (let i = 0; i < 5; i++) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/auth/login',
+        payload: { password: 'wrong' },
+      })
+      expect(response.statusCode).toBe(401)
+    }
+
+    const limited = await app.inject({
+      method: 'POST',
+      url: '/auth/login',
+      payload: { password: 'wrong' },
+    })
+
+    expect(limited.statusCode).toBe(429)
+    expect(limited.headers['content-type']).toContain('application/problem+json')
+    expect(limited.json()).toMatchObject({ type: 'rate-limited' })
+
+    await app.close()
+  })
 })
 
 describe('GET /auth/me', () => {

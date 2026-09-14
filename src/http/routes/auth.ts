@@ -12,6 +12,10 @@ export function registerAuthRoutes(app: FastifyInstance, deps: Deps): void {
   typed.post(
     '/auth/login',
     {
+      // A public, unauthenticated route guessing a single shared password is exactly what
+      // rate-limiting exists for — 5 attempts per 15 minutes per IP (build-app.ts registers the
+      // plugin itself with global: false, so no other route is limited).
+      config: { rateLimit: { max: 5, timeWindow: '15 minutes' } },
       schema: {
         tags: ['auth'],
         operationId: 'login',

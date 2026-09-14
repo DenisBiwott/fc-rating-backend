@@ -47,6 +47,13 @@ export class InvalidCredentialsError extends Error {
   }
 }
 
+export class RateLimitExceededError extends Error {
+  constructor(retryAfter: string) {
+    super(`Too many login attempts. Try again in ${retryAfter}.`)
+    this.name = 'RateLimitExceededError'
+  }
+}
+
 export class PlayerNameConflictError extends Error {
   constructor(name: string) {
     super(`A player named "${name}" already exists.`)

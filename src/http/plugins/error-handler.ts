@@ -7,6 +7,7 @@ import {
   PlayerHasMatchesError,
   PlayerNameConflictError,
   PlayerNotFoundError,
+  RateLimitExceededError,
   RatingConfigNameConflictError,
   SessionAlreadyClosedError,
   SessionAlreadyOpenError,
@@ -65,6 +66,10 @@ const errorMappings: readonly [test: (error: unknown) => boolean, mapping: Probl
   [
     (e) => e instanceof RatingConfigNameConflictError,
     { status: 409, type: 'conflict', title: 'Conflict' },
+  ],
+  [
+    (e) => e instanceof RateLimitExceededError,
+    { status: 429, type: 'rate-limited', title: 'Too Many Requests' },
   ],
 ]
 

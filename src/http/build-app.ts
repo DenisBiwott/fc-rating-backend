@@ -1,8 +1,10 @@
 import cookie from '@fastify/cookie'
 import cors from '@fastify/cors'
+import rateLimit from '@fastify/rate-limit'
 import swagger from '@fastify/swagger'
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from 'fastify'
 import { jsonSchemaTransform, serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod'
+import { RateLimitExceededError } from '../app/errors.js'
 import type { Deps } from '../app/types.js'
 import type { Config } from '../config.js'
 import { registerAuthDecorator, SESSION_COOKIE_NAME } from './plugins/auth.js'
@@ -48,6 +50,18 @@ export function buildApp(deps: Deps, config: Config): FastifyInstance {
     origin: config.CORS_ORIGIN,
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+  })
+
+  // global: false — only /auth/login opts in (via its route config below). Every other route is
+  // either a public read or already session-gated, so a blanket limiter would just be noise.
+  // @fastify/rate-limit throws whatever errorResponseBuilder returns from inside its onRequest
+  // hook, which propagates to registerErrorHandler like any other use-case error — so this reuses
+  // the same typed-error-class + errorMappings pattern as everything else, rather than reaching
+  // into reply internals to hand-format a 429.
+  void app.register(rateLimit, {
+    global: false,
+    errorResponseBuilder: (_request, context) =>
+      new RateLimitExceededError(context.after),
   })
 
   // Must register before any routes — @fastify/swagger hooks onRoute to collect schemas, so
