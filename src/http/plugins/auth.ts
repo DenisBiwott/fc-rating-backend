@@ -27,7 +27,12 @@ export function setSessionCookie(reply: FastifyReply, user: SessionUser): void {
   reply.setCookie(SESSION_COOKIE_NAME, JSON.stringify(user), {
     signed: true,
     httpOnly: true,
-    sameSite: 'lax',
+    // SameSite=None + Secure, not Lax: the frontend (Netlify) and this API (Cloud Run) are on
+    // different registrable domains, so this is genuinely cross-site, not just cross-origin —
+    // Lax cookies are withheld on cross-site fetch/XHR (only sent on top-level navigations).
+    // Secure cookies still work on http://localhost, so no dev/prod split is needed.
+    sameSite: 'none',
+    secure: true,
     path: '/',
     maxAge: COOKIE_MAX_AGE_SECONDS,
   })

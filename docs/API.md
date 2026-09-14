@@ -22,6 +22,10 @@ middleware chains or a permissions library. At MVP the one admin user holds all 
 capabilities; the role split exists so recorder/viewer accounts are a data change later, not a
 code change.
 
+The session cookie is `SameSite=None; Secure` — required because the frontend (Netlify) and this
+API (Cloud Run) are on different sites, not just different ports like local dev. `Secure` cookies
+work on `http://localhost` too, so no dev/prod split is needed.
+
 ## Idempotency
 
 `POST /matches` takes a client-generated UUID v7 as `id`. If that `id` has already been recorded,

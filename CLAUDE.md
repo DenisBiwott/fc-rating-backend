@@ -79,7 +79,20 @@ Verified end to end against the real (previously-empty) Neon DB — see
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full detail, including that Cloud Run's
 continuous-deployment trigger builds straight from the root `Dockerfile` on push, so no manual
 `gcloud run deploy` or image push is part of this repo's workflow. 137 tests still pass (test
-suite untouched by this work — only the config/server/migrate-script changes above).
+suite untouched by this work — only the config/server/migrate-script changes above). **Live**:
+`https://fc-rating-1067185865527.europe-west1.run.app/` (`/health` returns
+`{"status":"ok","db":"ok"}`).
+
+**Cross-origin cookie fix, 2026-09-14** — `setSessionCookie` (`src/http/plugins/auth.ts`) changed
+from `sameSite: 'lax'` to `sameSite: 'none'` + `secure: true`, found while planning the frontend's
+Netlify deploy: Netlify (`*.netlify.app`) and Cloud Run (`*.run.app`) are different registrable
+domains, so `SameSite=Lax` — fine for local dev, where `localhost:5173`→`localhost:3000` counts as
+same-site despite the port difference — would have silently withheld the session cookie on every
+cross-site `fetch`/XHR once the frontend moved off `localhost`, making login appear to succeed once
+and then look logged-out on every subsequent call. `Secure` cookies still work on
+`http://localhost`, so no dev/prod conditional was needed. Documented in
+[docs/API.md](docs/API.md#auth). Cloud Run's `CORS_ORIGIN` still needs setting to the frontend's
+final Netlify URL once that exists — not done yet.
 
 Build order lives in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The
 full product/
