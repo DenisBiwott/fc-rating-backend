@@ -94,6 +94,22 @@ and then look logged-out on every subsequent call. `Secure` cookies still work o
 [docs/API.md](docs/API.md#auth). Cloud Run's `CORS_ORIGIN` still needs setting to the frontend's
 final Netlify URL once that exists — not done yet.
 
+**Live database seeded for real, 2026-09-14** — the Neon DB has a real admin user, one active
+`default-elo` rating config (design-doc defaults, unchanged), and one open session (`"Ongoing"`),
+all verified against the live API (`/auth/me`, `/rating-configs`, `/sessions/current`). No
+production-setup runbook existed before this — now documented in
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#first-time-production-setup), including the
+admin-password-rotation gotcha (hashed once at seed time, `db:seed` no-ops if an admin row already
+exists — changing the env var later does nothing) and the safe inline-env-var pattern for running
+one-off scripts against Neon without ever touching `.env`'s active local `DATABASE_URL`.
+`scripts/reset-db.ts` also gained a guard, prompted by that exact risk: it now refuses to
+`DROP SCHEMA ... CASCADE` against anything with `neon.tech` in its `DATABASE_URL` unless
+`CONFIRM_PROD_RESET=yes` is explicitly set — verified it actually blocks (and that `db:migrate`/
+`db:seed` never run after it) before touching real data. Zero players seeded on purpose — real ones
+get added via `POST /players` once needed. The admin password chosen is deliberately weak
+(`unguessable`, the repo's own placeholder) — flagged once, kept by explicit user choice given the
+low-stakes friend-group context; worth reconsidering if that context ever changes.
+
 Build order lives in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The
 full product/
 data/API design lives in `../fc-rating-platform-design.md` (one directory up, outside this repo —

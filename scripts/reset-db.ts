@@ -13,6 +13,12 @@ const databaseUrl = process.env.DATABASE_URL
 if (databaseUrl === undefined) {
   throw new Error('DATABASE_URL is not set — copy .env.example to .env first.')
 }
+if (databaseUrl.includes('neon.tech') && process.env.CONFIRM_PROD_RESET !== 'yes') {
+  throw new Error(
+    'Refusing to reset what looks like the production Neon database. If this is really ' +
+      'intentional, re-run with CONFIRM_PROD_RESET=yes.',
+  )
+}
 
 const client = postgres(databaseUrl, { max: 1 })
 await client`drop schema if exists public cascade`
