@@ -11,6 +11,13 @@ if (databaseUrl === undefined) {
 const migrationClient = postgres(databaseUrl, { max: 1 })
 const db = drizzle(migrationClient)
 
-await migrate(db, { migrationsFolder: './src/infra/db/migrations' })
-await migrationClient.end()
-console.log('Migrations applied.')
+// Session-scoped lock on this single connection so concurrently-starting instances (e.g. Cloud
+// Run cold starts) block on each other instead of racing to apply the same migration twice.
+await migrationClient`select pg_advisory_lock(hashtext('fc_rating_migrations'))`
+try {
+  await migrate(db, { migrationsFolder: './src/infra/db/migrations' })
+  console.log('Migrations applied.')
+} finally {
+  await migrationClient`select pg_advisory_unlock(hashtext('fc_rating_migrations'))`
+  await migrationClient.end()
+}

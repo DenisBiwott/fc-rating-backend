@@ -70,6 +70,16 @@ typed error already uses. 137 tests pass (was 136). Also decided, not built here
 long-running session" is a one-time out-of-band `POST /sessions` call, not new product code) and
 void already has everything the frontend needs (`POST /matches/:id/void`,
 `GET /matches/:id/void-preview`) — see `fc-rating-frontend/CLAUDE.md` for what's changing there.
+**Containerized for Cloud Run, 2026-09-14** — `Dockerfile`/`.dockerignore`/`docker-entrypoint.sh`
+added (build-order step 8's Docker piece; README/CI still open), `PORT` renamed from the prior
+`API_PORT` drift, `src/server.ts` gained a SIGTERM/SIGINT graceful-shutdown handler, and
+`scripts/migrate.ts` now runs advisory-lock-gated (`pg_advisory_lock(hashtext(...))`) so it's safe
+to run automatically on every container start under Cloud Run's concurrent-cold-start model.
+Verified end to end against the real (previously-empty) Neon DB — see
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full detail, including that Cloud Run's
+continuous-deployment trigger builds straight from the root `Dockerfile` on push, so no manual
+`gcloud run deploy` or image push is part of this repo's workflow. 137 tests still pass (test
+suite untouched by this work — only the config/server/migrate-script changes above).
 
 Build order lives in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The
 full product/

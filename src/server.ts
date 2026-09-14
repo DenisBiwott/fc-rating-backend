@@ -24,3 +24,17 @@ app.listen({ port: config.PORT, host: '0.0.0.0' }).catch((error: unknown) => {
   app.log.error(error)
   process.exit(1)
 })
+
+async function shutdown(signal: NodeJS.Signals) {
+  app.log.info({ signal }, 'shutting down')
+  try {
+    await app.close()
+    process.exit(0)
+  } catch (error) {
+    app.log.error(error)
+    process.exit(1)
+  }
+}
+
+process.on('SIGTERM', () => void shutdown('SIGTERM'))
+process.on('SIGINT', () => void shutdown('SIGINT'))

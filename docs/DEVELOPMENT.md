@@ -40,7 +40,9 @@ prompt so the reasoning survives past the first session). Steps 1–6 are done; 
    This is the point the frontend repo started consuming a real contract instead of a
    hand-stubbed one.
 7. **Next.** Response-shape conformance tests against the committed `openapi.json`.
-8. README, Docker, CI (including wiring `generate:openapi:check` into the CI workflow).
+8. README, Docker, CI. **Docker done** (2026-09-14) — `Dockerfile`, `.dockerignore`,
+   `docker-entrypoint.sh`; see [DEPLOYMENT.md](DEPLOYMENT.md). README and CI (including wiring
+   `generate:openapi:check` into a PR workflow) still open.
 
 Commit after each numbered step — each is independently reviewable and the domain/database/API
 layers are genuinely separable pieces of learning.
