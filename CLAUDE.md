@@ -58,6 +58,18 @@ mutation route is exactly as gated as before; `GET /matches/:id/void-preview` an
 `GET /rating-configs` route stay admin-gated deliberately (part of the admin workflow / tuning
 data, not a public read) — new tests lock in both exceptions alongside the newly-public routes.
 136 tests pass (was 115).
+**MVP simplification pass, 2026-09-14.** `POST /auth/login` is now rate-limited (5 attempts / 15
+min per IP, `@fastify/rate-limit` registered with `global: false` in `src/http/build-app.ts` so no
+other route is affected) — the shared admin password had zero throttling, a real gap once the
+public-viewing change means anyone can reach `/login`. Its `errorResponseBuilder` throws a new
+`RateLimitExceededError` rather than hand-formatting a reply, so a 429 flows through the same
+`errorMappings`/`registerErrorHandler` pipeline (`src/http/plugins/error-handler.ts`) every other
+typed error already uses. 137 tests pass (was 136). Also decided, not built here: this repo needs
+**no other backend changes** for the frontend's session-management/match-history simplification
+(sessions stay exactly as built — `sessionId` was already optional on `recordMatch`; "one
+long-running session" is a one-time out-of-band `POST /sessions` call, not new product code) and
+void already has everything the frontend needs (`POST /matches/:id/void`,
+`GET /matches/:id/void-preview`) — see `fc-rating-frontend/CLAUDE.md` for what's changing there.
 
 Build order lives in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The
 full product/
