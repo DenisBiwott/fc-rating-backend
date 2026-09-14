@@ -17,8 +17,9 @@ first finishes and releases the lock.
 
 ## Backups
 
-TODO — not yet decided. Neon has its own point-in-time-recovery; evaluate whether that alone is
+Neon has its own point-in-time-recovery; evaluate whether that alone is
 sufficient before building anything extra.
+TODO — not yet decided.
 
 ## CI/CD
 
@@ -29,7 +30,7 @@ manual image push, no GitHub Actions deploy step needed for the backend. This is
 `Dockerfile` lives at the repo root rather than under `docker/` or similar — that path is exactly
 what the Cloud Run trigger points at.
 
-A `.github/` workflow is still worth adding, but scoped to what Cloud Run's trigger *doesn't*
+A `.github/` workflow is still worth adding, but scoped to what Cloud Run's trigger _doesn't_
 cover: lint/typecheck/test/`generate:openapi:check` as a PR gate, so a broken build only reaches
 Cloud Run's own build step (and a live deploy) after those pass locally-equivalent checks — not
 build/push/deploy itself. Not yet built.
