@@ -1,0 +1,142 @@
+[
+  {
+    "name": "elo-tuned-v1",
+    "algorithm": "elo",
+    "params": {
+      "baseline": 1200,
+      "kProvisional": 32,
+      "provisionalGames": 10,
+      "kEstablished": 20,
+      "drawScore": 0.5,
+      "expectationScale": 400,
+      "goalDifferenceFactor": { "enabled": true, "divisor": 3, "cap": 1.5 },
+      "eliteK": {
+        "enabled": true,
+        "enterAt": 1350,
+        "exitAt": 1320,
+        "k": 14,
+        "requireEstablished": true
+      },
+      "repeatOpponentDamping": {
+        "enabled": false,
+        "threshold": 3,
+        "factor": 0.85,
+        "minMultiplier": 0.3
+      },
+      "maxDelta": 35,
+      "ratingFloor": 900
+    }
+  },
+  {
+    "name": "elo-tuned-v1-k-lower",
+    "algorithm": "elo",
+    "params": {
+      "baseline": 1200,
+      "kProvisional": 28,
+      "provisionalGames": 10,
+      "kEstablished": 16,
+      "drawScore": 0.5,
+      "expectationScale": 400,
+      "goalDifferenceFactor": { "enabled": true, "divisor": 3, "cap": 1.5 },
+      "eliteK": {
+        "enabled": true,
+        "enterAt": 1350,
+        "exitAt": 1320,
+        "k": 11,
+        "requireEstablished": true
+      },
+      "repeatOpponentDamping": {
+        "enabled": false,
+        "threshold": 3,
+        "factor": 0.85,
+        "minMultiplier": 0.3
+      },
+      "maxDelta": 35,
+      "ratingFloor": 900
+    }
+  },
+  {
+    "name": "elo-tuned-v1-k-higher",
+    "algorithm": "elo",
+    "params": {
+      "baseline": 1200,
+      "kProvisional": 40,
+      "provisionalGames": 10,
+      "kEstablished": 24,
+      "drawScore": 0.5,
+      "expectationScale": 400,
+      "goalDifferenceFactor": { "enabled": true, "divisor": 3, "cap": 1.5 },
+      "eliteK": {
+        "enabled": true,
+        "enterAt": 1350,
+        "exitAt": 1320,
+        "k": 16,
+        "requireEstablished": true
+      },
+      "repeatOpponentDamping": {
+        "enabled": false,
+        "threshold": 3,
+        "factor": 0.85,
+        "minMultiplier": 0.3
+      },
+      "maxDelta": 35,
+      "ratingFloor": 900
+    }
+  },
+  {
+    "name": "elo-tuned-v1-gd-steeper",
+    "algorithm": "elo",
+    "params": {
+      "baseline": 1200,
+      "kProvisional": 32,
+      "provisionalGames": 10,
+      "kEstablished": 20,
+      "drawScore": 0.5,
+      "expectationScale": 400,
+      "goalDifferenceFactor": { "enabled": true, "divisor": 2, "cap": 1.75 },
+      "eliteK": {
+        "enabled": true,
+        "enterAt": 1350,
+        "exitAt": 1320,
+        "k": 14,
+        "requireEstablished": true
+      },
+      "repeatOpponentDamping": {
+        "enabled": false,
+        "threshold": 3,
+        "factor": 0.85,
+        "minMultiplier": 0.3
+      },
+      "maxDelta": 35,
+      "ratingFloor": 900
+    }
+  },
+  {
+    "name": "elo-tuned-v1-no-gd",
+    "algorithm": "elo",
+    "params": {
+      "baseline": 1200,
+      "kProvisional": 40,
+      "provisionalGames": 10,
+      "kEstablished": 24,
+      "drawScore": 0.5,
+      "expectationScale": 400,
+      "goalDifferenceFactor": { "enabled": false, "divisor": 3, "cap": 1.5 },
+      "eliteK": {
+        "enabled": true,
+        "enterAt": 1350,
+        "exitAt": 1320,
+        "k": 16,
+        "requireEstablished": true
+      },
+      "repeatOpponentDamping": {
+        "enabled": false,
+        "threshold": 3,
+        "factor": 0.85,
+        "minMultiplier": 0.3
+      },
+      "maxDelta": 35,
+      "ratingFloor": 900
+    }
+  }
+]

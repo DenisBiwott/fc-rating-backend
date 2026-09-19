@@ -1,6 +1,14 @@
 export * from './types.js'
 export { applyMatch, initialState, previewMatch, replay } from './engine.js'
 export {
+  COIN_FLIP_SCORE,
+  compareBrier,
+  scorePredictions,
+  type BrierComparison,
+  type Prediction,
+  type PredictionScore,
+} from './evaluation.js'
+export {
   actualScore,
   applyRatingFloor,
   clampDelta,

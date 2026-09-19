@@ -225,6 +225,14 @@ wall-clock input — it would break replay determinism.
   architectural rule or a previously-deferred decision, or a scar-worthy fix. **Always propose
   before editing a doc**: state which doc(s), quote the lines, show the replacement, and wait for
   a go-ahead — never edit a doc as a silent side effect of a code change.
+- **The Postman collection is maintained alongside the docs.** `postman/` (the collection plus
+  Local/Production environments) is generated from `openapi.json` by `scripts/generate-postman.ts`,
+  and `pnpm generate:openapi` regenerates both. Any change to a route, a request/response shape, or
+  a documented procedure that uses them (e.g. `docs/RATING_CONFIGS.md`) ships the regenerated
+  `postman/` in the same change. A new request body needs an example in the generator's `BODIES`;
+  generation fails without one, and fails if an example stops matching its Zod schema. Never
+  hand-edit `postman/*.json`. `pnpm generate:postman:check` fails if it's stale. See
+  [docs/POSTMAN.md](docs/POSTMAN.md).
 - Each topic has exactly one owning doc; update the owner rather than restating the fact
   elsewhere. Prefer no doc over a volatile one — don't hand-maintain an exhaustive route list or
   schema dump here; point at the code (or `openapi.json`) instead.
@@ -235,12 +243,14 @@ wall-clock input — it would break replay determinism.
 
 ## Where to look
 
-| Doc                                            | Read it when                                                                     |
-| ---------------------------------------------- | -------------------------------------------------------------------------------- |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)   | Layer boundaries, domain model, effective-match/replay design, concurrency model |
-| [docs/DATABASE.md](docs/DATABASE.md)           | Schema, constraints, views, migrations, seeds                                    |
-| [docs/API.md](docs/API.md)                     | Routes, auth/roles, error format, idempotency contract                           |
-| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)     | Local setup, build order, scripts, running tests                                 |
-| [docs/CONFIGURATION.md](docs/CONFIGURATION.md) | Env vars                                                                         |
-| [docs/TESTING.md](docs/TESTING.md)             | Testing strategy per layer, CI quality gates                                     |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)       | Docker Compose, VPS, migrations, backups                                         |
+| Doc                                              | Read it when                                                                     |
+| ------------------------------------------------ | -------------------------------------------------------------------------------- |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)     | Layer boundaries, domain model, effective-match/replay design, concurrency model |
+| [docs/DATABASE.md](docs/DATABASE.md)             | Schema, constraints, views, migrations, seeds                                    |
+| [docs/API.md](docs/API.md)                       | Routes, auth/roles, error format, idempotency contract                           |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)       | Local setup, build order, scripts, running tests                                 |
+| [docs/CONFIGURATION.md](docs/CONFIGURATION.md)   | Env vars                                                                         |
+| [docs/TESTING.md](docs/TESTING.md)               | Testing strategy per layer, CI quality gates                                     |
+| [docs/RATING_CONFIGS.md](docs/RATING_CONFIGS.md) | Evaluating candidate rating configs (`pnpm ratings:evaluate`), adopting one      |
+| [docs/POSTMAN.md](docs/POSTMAN.md)               | Importing and using the Postman collection, keeping it generated                 |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)         | Docker Compose, VPS, migrations, backups                                         |

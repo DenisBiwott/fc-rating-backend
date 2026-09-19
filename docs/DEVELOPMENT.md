@@ -77,4 +77,6 @@ migration files to plain text so the T-SQL validator stops claiming them.
 
 `pnpm generate:openapi` regenerates `openapi.json` from the live Zod route schemas. Run it
 whenever a route, request, or response schema changes, and commit the diff in the same PR as the
-schema change — CI fails if the committed file is stale relative to the generated output.
+schema change — CI fails if the committed file is stale relative to the generated output. The same
+command regenerates the Postman collection in `postman/` ([POSTMAN.md](POSTMAN.md)); commit it
+alongside `openapi.json`.
