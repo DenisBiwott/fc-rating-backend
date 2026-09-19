@@ -81,6 +81,7 @@ export class RatingConfigNotFoundError extends Error {
 
 export interface ResolvedRatingConfig {
   id: string
+  name: string
   config: DomainRatingConfig
 }
 
@@ -93,7 +94,7 @@ export type NewRatingConfigRow = typeof ratingConfigs.$inferInsert
  */
 function toResolvedRatingConfig(row: RatingConfigRow): ResolvedRatingConfig {
   const params = eloParamsSchema.parse(row.params)
-  return { id: row.id, config: { algorithm: 'elo', params } }
+  return { id: row.id, name: row.name, config: { algorithm: 'elo', params } }
 }
 
 export async function getActiveRatingConfig(db: Queryable): Promise<ResolvedRatingConfig> {

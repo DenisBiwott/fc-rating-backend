@@ -19,4 +19,5 @@ const leaderboardEntrySchema = z.object({
 export const leaderboardResponseSchema = z.object({
   entries: z.array(leaderboardEntrySchema),
   meanRating: z.number(),
+  ratingConfig: z.object({ name: z.string(), provisionalGames: z.number().int() }),
 })

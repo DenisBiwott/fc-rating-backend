@@ -22,6 +22,7 @@ export function registerLeaderboardRoutes(app: FastifyInstance, deps: Deps): voi
       return {
         entries: result.entries.map((entry) => ({ ...entry, form: [...entry.form] })),
         meanRating: result.meanRating,
+        ratingConfig: result.ratingConfig,
       }
     },
   )

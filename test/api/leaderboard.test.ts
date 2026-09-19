@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Database } from '../../src/app/types.js'
-import { seedActiveConfig, seedPlayer } from '../integration/helpers/factories.js'
+import {
+  activateNewConfig,
+  seedActiveConfig,
+  seedPlayer,
+} from '../integration/helpers/factories.js'
 import { createTestDb, type TestDb } from '../integration/helpers/test-db.js'
 import { buildTestApp } from './helpers/app.js'
 import { loginAsAdmin, seedAdmin } from './helpers/auth.js'
@@ -58,6 +62,23 @@ describe('GET /leaderboard', () => {
     const app = buildTestApp(db)
     const response = await app.inject({ method: 'GET', url: '/leaderboard' })
     expect(response.statusCode).toBe(200)
+    await app.close()
+  })
+
+  it('names the ACTIVE config, and follows it when another is activated', async () => {
+    const app = buildTestApp(db)
+    const ratingConfigOf = async () =>
+      (
+        await app.inject({ method: 'GET', url: '/leaderboard' })
+      ).json<{ ratingConfig: { name: string; provisionalGames: number } }>().ratingConfig
+
+    const seeded = await ratingConfigOf()
+    expect(seeded.name).toMatch(/^test-elo-/)
+    expect(seeded.provisionalGames).toBe(10)
+
+    const switched = await activateNewConfig(db, { provisionalGames: 5 })
+    expect(await ratingConfigOf()).toEqual({ name: switched.name, provisionalGames: 5 })
+
     await app.close()
   })
 })

@@ -2324,11 +2324,30 @@
                     },
                     "meanRating": {
                       "type": "number"
+                    },
+                    "ratingConfig": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "provisionalGames": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "provisionalGames"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
                     "entries",
-                    "meanRating"
+                    "meanRating",
+                    "ratingConfig"
                   ],
                   "additionalProperties": false
                 }

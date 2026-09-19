@@ -30,6 +30,12 @@ export interface LeaderboardEntry {
 export interface LeaderboardResult {
   entries: readonly LeaderboardEntry[]
   meanRating: number
+  /**
+   * Which config these ratings come from — the public view of it. Just enough for a client to
+   * label the board and render "provisional N/M" without hardcoding either; the full params stay
+   * behind the admin-only /rating-configs routes.
+   */
+  ratingConfig: { name: string; provisionalGames: number }
 }
 
 /**
@@ -39,7 +45,7 @@ export interface LeaderboardResult {
  * because the two derived facts (form[5], streak) aren't expressible as plain SQL aggregates.
  */
 export async function leaderboard(deps: Deps): Promise<LeaderboardResult> {
-  const { id: configId, config } = await getActiveRatingConfig(deps.db)
+  const { id: configId, name, config } = await getActiveRatingConfig(deps.db)
   const ratings = await activePlayerRatings(deps.db, configId, config.params.baseline)
   const effectiveMatches = (await allEffectiveMatches(deps.db)).filter((match) => !match.isVoid)
 
@@ -75,5 +81,9 @@ export async function leaderboard(deps: Deps): Promise<LeaderboardResult> {
       ? config.params.baseline
       : ratings.reduce((sum, player) => sum + player.rating, 0) / ratings.length
 
-  return { entries, meanRating }
+  return {
+    entries,
+    meanRating,
+    ratingConfig: { name, provisionalGames: config.params.provisionalGames },
+  }
 }
