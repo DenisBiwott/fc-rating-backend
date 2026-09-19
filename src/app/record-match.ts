@@ -16,6 +16,7 @@ import {
 } from '../infra/db/queries/matches.js'
 import { getActiveRatingConfig } from '../infra/db/queries/rating-configs.js'
 import { activePlayerRatings, latestSnapshotsFor } from '../infra/db/queries/ratings.js'
+import { candidateMatchInput } from './candidate-match-input.js'
 import { outcomeFromSnapshotRows } from './reconstruct-outcome.js'
 import { diffRanks, type RankChange } from './replay.js'
 import { toSnapshotRow } from './snapshot-mapper.js'
@@ -119,11 +120,7 @@ async function recordUnderLock(
   if (homeRating !== undefined) table.set(homeId, homeRating)
   if (awayRating !== undefined) table.set(awayId, awayRating)
 
-  const { outcome } = applyMatch(
-    table,
-    { home: homeId, away: awayId, homeScore: input.homeScore, awayScore: input.awayScore },
-    config,
-  )
+  const { outcome } = applyMatch(table, await candidateMatchInput(tx, config, input), config)
 
   const matchRow = await insertMatch(tx, {
     id: input.id,

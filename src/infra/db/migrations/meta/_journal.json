@@ -15,6 +15,13 @@
       "when": 1788702882846,
       "tag": "0001_views",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789809404805,
+      "tag": "0002_snapshot_elite_flag",
+      "breakpoints": true
     }
   ]
 }

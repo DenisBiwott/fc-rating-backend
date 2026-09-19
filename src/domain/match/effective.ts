@@ -41,6 +41,7 @@ export function effectiveMatches(
         awayPlayerId: adjustment.newAwayPlayerId,
         homeScore: adjustment.newHomeScore,
         awayScore: adjustment.newAwayScore,
+        sessionId: match.sessionId,
         isVoid: false,
       }
     })

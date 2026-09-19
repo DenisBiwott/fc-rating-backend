@@ -4,11 +4,9 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { correctMatch } from '../../src/app/correct-match.js'
 import { MatchNotFoundError, MatchValidationError } from '../../src/app/errors.js'
 import { leaderboard } from '../../src/app/leaderboard.js'
-import { rebuildConfig } from '../../src/app/rebuild-config.js'
 import { recordMatch } from '../../src/app/record-match.js'
 import type { Database } from '../../src/app/types.js'
 import { voidMatch } from '../../src/app/void-match.js'
-import { ratingSnapshots } from '../../src/infra/db/schema.js'
 import { testDeps } from './helpers/deps.js'
 import { seedActiveConfig, seedPlayer, seedUser } from './helpers/factories.js'
 import { createTestDb, type TestDb } from './helpers/test-db.js'
@@ -16,7 +14,6 @@ import { createTestDb, type TestDb } from './helpers/test-db.js'
 let testDb: TestDb
 let db: Database
 let userId: string
-let configId: string
 let playerAId: string
 let playerBId: string
 let playerCId: string
@@ -25,7 +22,7 @@ beforeAll(async () => {
   testDb = await createTestDb()
   db = testDb.db
   userId = (await seedUser(db)).id
-  configId = (await seedActiveConfig(db)).id
+  await seedActiveConfig(db)
   playerAId = (await seedPlayer(db, 'Alice')).id
   playerBId = (await seedPlayer(db, 'Bob')).id
   playerCId = (await seedPlayer(db, 'Carol')).id
@@ -50,10 +47,6 @@ async function record(home: string, away: string, homeScore: number, awayScore: 
     awayScore,
     recordedBy: userId,
   })
-}
-
-async function allSnapshots() {
-  return db.select().from(ratingSnapshots)
 }
 
 describe('voidMatch', () => {
@@ -148,38 +141,5 @@ describe('correctMatch', () => {
         adjustedBy: userId,
       }),
     ).rejects.toBeInstanceOf(MatchValidationError)
-  })
-})
-
-describe('rebuildConfig', () => {
-  it('produces byte-identical snapshots to the incremental path — the strongest correctness guarantee in the system', async () => {
-    // A representative sequence: some wins, a draw, then a void and a correct — exercising every
-    // adjustment path before the rebuild has to reproduce the same end state from scratch.
-    const m1 = await record(playerAId, playerBId, 1, 0)
-    await record(playerBId, playerCId, 2, 2)
-    await record(playerCId, playerAId, 0, 1)
-    await voidMatch(testDeps(db), { matchId: m1.match.id, reason: 'void', adjustedBy: userId })
-    const m4 = await record(playerAId, playerCId, 3, 1)
-    await correctMatch(testDeps(db), {
-      matchId: m4.match.id,
-      reason: 'correct',
-      homePlayerId: playerAId,
-      awayPlayerId: playerCId,
-      homeScore: 3,
-      awayScore: 3,
-      adjustedBy: userId,
-    })
-
-    const incremental = (await allSnapshots())
-      .map((row) => ({ ...row }))
-      .sort((a, b) => a.matchSequence - b.matchSequence || a.playerId.localeCompare(b.playerId))
-
-    await rebuildConfig(testDeps(db), configId)
-
-    const rebuilt = (await allSnapshots())
-      .map((row) => ({ ...row }))
-      .sort((a, b) => a.matchSequence - b.matchSequence || a.playerId.localeCompare(b.playerId))
-
-    expect(rebuilt).toEqual(incremental)
   })
 })

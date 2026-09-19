@@ -2,7 +2,11 @@ import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import type { Database } from '../../src/app/types.js'
-import { seedActiveConfig, seedPlayer } from '../integration/helpers/factories.js'
+import {
+  activateNewConfig,
+  seedActiveConfig,
+  seedPlayer,
+} from '../integration/helpers/factories.js'
 import { createTestDb, type TestDb } from '../integration/helpers/test-db.js'
 import { buildTestApp } from './helpers/app.js'
 import { loginAsAdmin, seedAdmin } from './helpers/auth.js'
@@ -50,6 +54,63 @@ describe('POST /matches/preview', () => {
 
     const list = await app.inject({ method: 'GET', url: '/matches', cookies })
     expect(list.json<{ items: unknown[] }>().items).toHaveLength(0)
+
+    await app.close()
+  })
+
+  it('accepts an optional sessionId, for configs that damp repeat meetings within a session', async () => {
+    const app = buildTestApp(db)
+    const session = await app.inject({
+      method: 'POST',
+      url: '/sessions',
+      cookies,
+      payload: { name: `Preview-${randomUUID()}` },
+    })
+    const sessionId = session.json<{ id: string }>().id
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/matches/preview',
+      cookies,
+      payload: {
+        homePlayerId: playerAId,
+        awayPlayerId: playerBId,
+        homeScore: 1,
+        awayScore: 0,
+        sessionId,
+      },
+    })
+    expect(response.statusCode).toBe(200)
+
+    await app.inject({ method: 'POST', url: `/sessions/${sessionId}/close`, cookies })
+    await app.close()
+  })
+})
+
+describe('POST /matches/preview under an eliteK config', () => {
+  beforeAll(async () => {
+    await activateNewConfig(db, {
+      eliteK: { enabled: true, enterAt: 1500, exitAt: 1450, k: 16, requireEstablished: true },
+    })
+  })
+
+  afterAll(async () => {
+    await activateNewConfig(db)
+  })
+
+  it('keeps the elite flag internal — rating state in the response is exactly { rating, gamesPlayed }', async () => {
+    const app = buildTestApp(db)
+    const response = await app.inject({
+      method: 'POST',
+      url: '/matches/preview',
+      cookies,
+      payload: { homePlayerId: playerAId, awayPlayerId: playerBId, homeScore: 1, awayScore: 0 },
+    })
+
+    expect(response.statusCode).toBe(200)
+    const outcome = response.json<{ home: { before: object; after: object } }>()
+    expect(Object.keys(outcome.home.before).sort()).toEqual(['gamesPlayed', 'rating'])
+    expect(Object.keys(outcome.home.after).sort()).toEqual(['gamesPlayed', 'rating'])
 
     await app.close()
   })

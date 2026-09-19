@@ -10,8 +10,12 @@ type RawRow = {
   away_player_id: string
   home_score: number
   away_score: number
+  session_id: string | null
   is_void: boolean
 }
+
+const EFFECTIVE_COLUMNS = sql`id, sequence, home_player_id, away_player_id, home_score, away_score,
+  session_id, is_void`
 
 function toEffectiveMatch(row: RawRow): EffectiveMatch {
   return {
@@ -21,6 +25,7 @@ function toEffectiveMatch(row: RawRow): EffectiveMatch {
     awayPlayerId: row.away_player_id as EffectiveMatch['awayPlayerId'],
     homeScore: row.home_score,
     awayScore: row.away_score,
+    sessionId: row.session_id,
     isVoid: row.is_void,
   }
 }
@@ -28,7 +33,7 @@ function toEffectiveMatch(row: RawRow): EffectiveMatch {
 /** Reads the match_effective view (docs/DATABASE.md#views) — the current truth of every match. */
 export async function allEffectiveMatches(db: Queryable): Promise<EffectiveMatch[]> {
   const rows = await db.execute<RawRow>(sql`
-    select id, sequence, home_player_id, away_player_id, home_score, away_score, is_void
+    select ${EFFECTIVE_COLUMNS}
     from match_effective
     order by sequence
   `)
@@ -40,7 +45,7 @@ export async function effectiveMatchById(
   matchId: string,
 ): Promise<EffectiveMatch | undefined> {
   const rows = await db.execute<RawRow>(sql`
-    select id, sequence, home_player_id, away_player_id, home_score, away_score, is_void
+    select ${EFFECTIVE_COLUMNS}
     from match_effective
     where id = ${matchId}
   `)
@@ -53,7 +58,7 @@ export async function effectiveMatchesForPlayer(
   playerId: string,
 ): Promise<EffectiveMatch[]> {
   const rows = await db.execute<RawRow>(sql`
-    select id, sequence, home_player_id, away_player_id, home_score, away_score, is_void
+    select ${EFFECTIVE_COLUMNS}
     from match_effective
     where (home_player_id = ${playerId} or away_player_id = ${playerId}) and not is_void
     order by sequence
@@ -64,7 +69,8 @@ export async function effectiveMatchesForPlayer(
 /**
  * The full match_effective row — a superset of the domain EffectiveMatch type (which only carries
  * what the pure overlay/replay logic needs). Kept separate rather than widening the shared domain
- * type: playedAt/session/recorded-by are HTTP list/detail concerns, not replay inputs.
+ * type: playedAt/recorded-by are HTTP list/detail concerns, not replay inputs (sessionId is both —
+ * repeat-opponent damping reads it — so it's on EffectiveMatch too).
  */
 export interface EffectiveMatchDetail {
   id: string
@@ -168,7 +174,7 @@ export async function effectiveMatchesForSession(
   sessionId: string,
 ): Promise<EffectiveMatch[]> {
   const rows = await db.execute<RawRow>(sql`
-    select id, sequence, home_player_id, away_player_id, home_score, away_score, is_void
+    select ${EFFECTIVE_COLUMNS}
     from match_effective
     where session_id = ${sessionId} and not is_void
     order by sequence

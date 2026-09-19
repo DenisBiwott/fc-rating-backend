@@ -1,6 +1,6 @@
 import { rankPlayers } from '../domain/leaderboard/compute.js'
 import type { RankedPlayer } from '../domain/leaderboard/types.js'
-import { toMatchInput } from '../domain/match/result.js'
+import { toMatchInputs } from '../domain/match/result.js'
 import { replay } from '../domain/rating/engine.js'
 import { allEffectiveMatches } from '../infra/db/queries/match-effective.js'
 import { getRatingConfigById } from '../infra/db/queries/rating-configs.js'
@@ -27,7 +27,7 @@ export async function whatIfLeaderboard(
 ): Promise<WhatIfLeaderboardResult> {
   const { config } = await getRatingConfigById(deps.db, configId)
   const effectiveMatches = (await allEffectiveMatches(deps.db)).filter((match) => !match.isVoid)
-  const { table } = replay(effectiveMatches.map(toMatchInput), config)
+  const { table } = replay(toMatchInputs(effectiveMatches), config)
 
   const ratedPlayers = [...table.entries()].map(([playerId, state]) => ({
     playerId,

@@ -100,6 +100,24 @@ Elo detail worth knowing before touching this code: K depends on `gamesPlayed` (
 established), so when one player is provisional and the other isn't, **deltas do not sum to
 zero** — that's the one intentional source of rating inflation/deflation in the system, not a bug.
 
+Optional refinements on `EloParams`, all off by default and read only from the config being
+replayed (never from env vars or globals): `expectationScale`, `goalDifferenceFactor`, `eliteK`,
+`repeatOpponentDamping`, `maxDelta`, `ratingFloor`. K is resolved in a fixed order (see
+`src/domain/rating/elo.ts`): bracket K → elite override → goal-difference multiplier →
+repeat-opponent damping → `delta = K·(S−E)` → clamp to `maxDelta` → apply, then clamp to
+`ratingFloor`. With every one off this is bit-identical to plain bracketed Elo. Two deliberately
+break zero-sum within a bracket — `eliteK` (when only one side is elite) and `ratingFloor` (when
+it catches the loser). `maxDelta` doesn't: it clamps a symmetric ±d pair symmetrically.
+
+- **The elite flag is state, not a function of rating.** Hysteresis (enter at `enterAt`, leave
+  below `exitAt`) makes any rating between the two ambiguous, so the flag is carried in
+  `RatingState` and persisted in `rating_snapshots.is_elite_after` — the incremental path reads it
+  back, or it would diverge from a rebuild.
+- **Damping counts meetings of a pair within a session**, so `sessionId` is a replay input
+  (`toMatchInputs` in `src/domain/match/result.ts` computes the count for replay, record, and
+  preview alike). With the MVP's one long-lived session, that means all-time meetings — decide
+  whether that's wanted before adopting damping.
+
 Extension seam for Glicko-2 (post-MVP): add a union variant, a module, and a `case` in
 `applyMatch`. No registries, no strategy classes. Team matches (2v2, post-MVP) are folded into a
 virtual 1v1 _before_ the engine sees them — the engine's signature doesn't change.

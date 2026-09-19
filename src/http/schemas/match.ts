@@ -77,6 +77,9 @@ export const previewMatchBodySchema = z.object({
   awayPlayerId: z.string(),
   homeScore: z.number().int().min(0).max(99),
   awayScore: z.number().int().min(0).max(99),
+  // Pass the same session the match will be recorded into — under a config with
+  // repeat-opponent damping, the preview can't match the recorded result without it.
+  sessionId: z.string().optional(),
 })
 
 export const rankChangeSchema = z.object({ playerId: z.string(), from: z.number(), to: z.number() })

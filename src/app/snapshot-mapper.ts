@@ -18,5 +18,6 @@ export function toSnapshotRow(
     actualScore: participant.actualScore,
     delta: participant.delta,
     gamesPlayedAfter: participant.after.gamesPlayed,
+    isEliteAfter: participant.after.isElite ?? false,
   }
 }

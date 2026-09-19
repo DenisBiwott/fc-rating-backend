@@ -110,6 +110,18 @@ get added via `POST /players` once needed. The admin password chosen is delibera
 (`unguessable`, the repo's own placeholder) — flagged once, kept by explicit user choice given the
 low-stakes friend-group context; worth reconsidering if that context ever changes.
 
+**Configurable Elo refinements, 2026-09-19.** The `elo` config gained five optional, default-off
+features — `expectationScale`, `goalDifferenceFactor`, `eliteK` (with hysteresis),
+`repeatOpponentDamping` (per session), `maxDelta`/`ratingFloor` — read only from the config being
+replayed. With all of them off the engine is bit-identical to before: asserted at `Object.is`
+level in tests, and confirmed by rebuilding the dev database's 142 snapshot rows (written by the
+previous code) byte for byte. Migration `0002_snapshot_elite_flag` adds
+`rating_snapshots.is_elite_after`, the hysteresis state the incremental path reads back.
+`POST /matches/preview` accepts an optional `sessionId`. The rebuild-equals-incremental test now
+runs once per config variant (see Scars for why the old one proved nothing). Not adopted in
+production yet: no config uses the features, and there's still no activate endpoint — adopting
+one means inserting it, flipping `is_active` by hand, and rebuilding. 265 tests pass (was 137).
+
 Build order lives in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The
 full product/
 data/API design lives in `../fc-rating-platform-design.md` (one directory up, outside this repo —
@@ -187,14 +199,23 @@ constraint throws `DrizzleQueryError`, not the underlying `PostgresError`.** The
   `onRoute` firing (schema collection for `app.swagger()`, here) silently sees nothing. Fixed by
   wrapping route registration in `app.after(...)`, which defers until every plugin registered
   above it has finished loading. See `src/http/build-app.ts`.
+- **A rebuild-equals-incremental scenario that ends in a void/correct proves nothing.**
+  `voidMatch`/`correctMatch` run `replayAndPersist`, which deletes and rewrites every snapshot row
+  for the config — so the original test (record, void, record, correct, then compare against
+  `rebuildConfig`) compared a replay with a replay, and still passed with home/away scores swapped
+  on the incremental path. Scenarios must record matches after their last adjustment;
+  `test/integration/rebuild-equals-incremental.test.ts` asserts such incrementally written rows
+  exist before it compares anything.
 
 ## Scope boundaries
 
 Deliberately not modelled at MVP — flag rather than silently design around these: `Season`,
 `MatchParticipant` (2v2), `Team`, achievements, Glicko-2 (the `RatingConfig` union has exactly one
-variant, `elo`), margin-of-victory scoring, per-player login/OAuth (`users` stays separate from
-`players` for exactly this reason). See design doc §13 for the intended order if one of these
-becomes real work.
+variant, `elo`), per-player login/OAuth (`users` stays separate from `players` for exactly this
+reason). See design doc §13 for the intended order if one of these becomes real work. Margin of
+victory exists only as the optional, default-off `goalDifferenceFactor` on the `elo` config.
+Rating stays a pure function of config + effective match log, so no rating decay or other
+wall-clock input — it would break replay determinism.
 
 ## Process rules
 

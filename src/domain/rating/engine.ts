@@ -1,4 +1,4 @@
-import { actualScore, expectedScore, nextRating } from './elo.js'
+import { actualScore, expectedScore, nextRating, ratingState } from './elo.js'
 import type {
   MatchInput,
   MatchOutcome,
@@ -12,11 +12,24 @@ import type {
 
 /** Rating state for a player not yet in the table. */
 export function initialState(config: RatingConfig): RatingState {
-  return { rating: config.params.baseline, gamesPlayed: 0 }
+  return ratingState(config.params.baseline, 0, false, config.params)
 }
 
+/**
+ * A stored state as this config sees it. The elite flag only exists under a config with eliteK
+ * enabled: the DB layer always reads is_elite_after back, so it's dropped here for every other
+ * config (keeping their states exactly { rating, gamesPlayed }), and defaulted to false for an
+ * elite config handed a state that never had one.
+ */
 function lookup(table: RatingTable, playerId: PlayerId, config: RatingConfig): RatingState {
-  return table.get(playerId) ?? initialState(config)
+  const state = table.get(playerId)
+  if (state === undefined) return initialState(config)
+
+  const eliteEnabled = config.params.eliteK?.enabled === true
+  if (eliteEnabled === (state.isElite !== undefined)) return state
+  return eliteEnabled
+    ? { rating: state.rating, gamesPlayed: state.gamesPlayed, isElite: false }
+    : { rating: state.rating, gamesPlayed: state.gamesPlayed }
 }
 
 function computeOutcome(
@@ -24,16 +37,17 @@ function computeOutcome(
   match: MatchInput,
   config: RatingConfig,
 ): { outcome: MatchOutcome; table: RatingTable } {
+  const { params } = config
   const homeBefore = lookup(table, match.home, config)
   const awayBefore = lookup(table, match.away, config)
 
-  const homeExpected = expectedScore(homeBefore.rating, awayBefore.rating)
+  const homeExpected = expectedScore(homeBefore.rating, awayBefore.rating, params.expectationScale)
   const awayExpected = 1 - homeExpected
   const homeActual = actualScore(match.homeScore, match.awayScore)
   const awayActual = actualScore(match.awayScore, match.homeScore)
 
-  const homeAfter = nextRating(homeBefore, homeExpected, homeActual, config.params)
-  const awayAfter = nextRating(awayBefore, awayExpected, awayActual, config.params)
+  const homeAfter = nextRating(homeBefore, homeExpected, homeActual, match, params)
+  const awayAfter = nextRating(awayBefore, awayExpected, awayActual, match, params)
 
   const home: ParticipantOutcome = {
     playerId: match.home,
@@ -42,7 +56,7 @@ function computeOutcome(
     expectedScore: homeExpected,
     actualScore: homeActual,
     delta: homeAfter.rating - homeBefore.rating,
-    wasProvisional: homeBefore.gamesPlayed < config.params.provisionalGames,
+    wasProvisional: homeBefore.gamesPlayed < params.provisionalGames,
   }
   const away: ParticipantOutcome = {
     playerId: match.away,
@@ -51,7 +65,7 @@ function computeOutcome(
     expectedScore: awayExpected,
     actualScore: awayActual,
     delta: awayAfter.rating - awayBefore.rating,
-    wasProvisional: awayBefore.gamesPlayed < config.params.provisionalGames,
+    wasProvisional: awayBefore.gamesPlayed < params.provisionalGames,
   }
 
   const winner = homeActual === 1 ? home : awayActual === 1 ? away : null

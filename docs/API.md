@@ -55,7 +55,8 @@ POST /matches →
 
 `POST /matches/preview` returns the same `outcome` shape without writing anything — it's what
 powers the record-match preview line, called on every score change (debounced 150ms on the
-frontend).
+frontend). Pass the same optional `sessionId` the match will be recorded with: under a config with
+repeat-opponent damping, the preview can't match the recorded result without it.
 
 ## Void and correct
 

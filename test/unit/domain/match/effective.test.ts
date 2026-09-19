@@ -14,6 +14,7 @@ const baseMatch: StoredMatch = {
   awayPlayerId: bob,
   homeScore: 2,
   awayScore: 1,
+  sessionId: 's1',
 }
 
 describe('effectiveMatches', () => {
@@ -46,6 +47,7 @@ describe('effectiveMatches', () => {
       awayPlayerId: carol,
       homeScore: 3,
       awayScore: 3,
+      sessionId: 's1', // a correction never moves a match between sessions
       isVoid: false,
     })
   })

@@ -24,11 +24,15 @@ are outside what Drizzle's builder can express, so they're hand-written in a cus
   same match), `type` (`void`/`correct`), `reason`, and replacement fields that are required for
   `correct` and must be null for `void` (enforced by a single `CHECK` on shape).
 - **`rating_configs`** — `id`, `name` (unique), `algorithm`, `params` (jsonb, shape validated by
-  Zod in the app layer, not the database), `is_active`. Partial unique index
-  `rating_configs_one_active` enforces **exactly one active config**.
+  Zod in the app layer, not the database; optional Elo features are stored with their defaults
+  filled in at creation, so a config's meaning never depends on a code-level default),
+  `is_active`. Partial unique index `rating_configs_one_active` enforces **exactly one active
+  config**.
 - **`rating_snapshots`** — **cache only, safe to truncate and rebuild.** Primary key
   `(config_id, match_id, player_id)`; stores `rating_before`, `rating_after`, `expected_score`,
-  `actual_score`, `delta`, `games_played_after`. Indexed on
+  `actual_score`, `delta`, `games_played_after`, `is_elite_after` (elite-K hysteresis state —
+  derived by replay like the rest, but not recoverable from `rating_after` alone, so the
+  incremental path reads it back; always false under a config without `eliteK`). Indexed on
   `(config_id, player_id, match_sequence desc)` for "latest snapshot per player" lookups.
 
 Full column list and constraint SQL: `src/infra/db/schema.ts` (generated migration:

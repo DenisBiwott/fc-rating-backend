@@ -9,32 +9,40 @@ type LatestSnapshotRow = {
   player_id: string
   rating_after: number
   games_played_after: number
+  is_elite_after: boolean
+}
+
+function toRatingState(row: LatestSnapshotRow): RatingState {
+  return {
+    rating: row.rating_after,
+    gamesPlayed: row.games_played_after,
+    isElite: row.is_elite_after,
+  }
 }
 
 /**
- * Latest rating_snapshots row per player, for the given config and player set. A player missing
- * from the returned map has no snapshot yet — callers fall back to the domain's initialState.
+ * Latest rating_snapshots row per player, for the given config and player set — the incremental
+ * path's "before" state, so it must carry everything the engine's next step reads (including the
+ * elite flag; the engine drops it again under a config without eliteK). A player missing from the
+ * returned map has no snapshot yet — callers fall back to the domain's initialState.
  */
 export async function latestSnapshotsFor(
   db: Queryable,
   configId: string,
   playerIds: readonly string[],
-): Promise<Map<PlayerId, { rating: number; gamesPlayed: number }>> {
-  const result = new Map<PlayerId, { rating: number; gamesPlayed: number }>()
+): Promise<Map<PlayerId, RatingState>> {
+  const result = new Map<PlayerId, RatingState>()
   if (playerIds.length === 0) return result
 
   const rows = await db.execute<LatestSnapshotRow>(sql`
-    select distinct on (player_id) player_id, rating_after, games_played_after
+    select distinct on (player_id) player_id, rating_after, games_played_after, is_elite_after
     from rating_snapshots
     where config_id = ${configId} and player_id in ${playerIds}
     order by player_id, match_sequence desc
   `)
 
   for (const row of rows) {
-    result.set(row.player_id as PlayerId, {
-      rating: row.rating_after,
-      gamesPlayed: row.games_played_after,
-    })
+    result.set(row.player_id as PlayerId, toRatingState(row))
   }
   return result
 }
@@ -79,7 +87,7 @@ export async function activePlayerRatings(
 /** Latest snapshot per player for this config, across every player who has ever had one — not just active players. Used to diff before/after a replay (void/correct/rebuild). */
 export async function allLatestSnapshots(db: Queryable, configId: string): Promise<RatingTable> {
   const rows = await db.execute<LatestSnapshotRow>(sql`
-    select distinct on (player_id) player_id, rating_after, games_played_after
+    select distinct on (player_id) player_id, rating_after, games_played_after, is_elite_after
     from rating_snapshots
     where config_id = ${configId}
     order by player_id, match_sequence desc
@@ -87,10 +95,7 @@ export async function allLatestSnapshots(db: Queryable, configId: string): Promi
 
   const table = new Map<PlayerId, RatingState>()
   for (const row of rows) {
-    table.set(row.player_id as PlayerId, {
-      rating: row.rating_after,
-      gamesPlayed: row.games_played_after,
-    })
+    table.set(row.player_id as PlayerId, toRatingState(row))
   }
   return table
 }

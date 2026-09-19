@@ -1,6 +1,6 @@
 import { rankPlayers } from '../domain/leaderboard/compute.js'
 import type { RatedPlayer } from '../domain/leaderboard/types.js'
-import { toMatchInput } from '../domain/match/result.js'
+import { toMatchInputs } from '../domain/match/result.js'
 import { replay } from '../domain/rating/engine.js'
 import type { PlayerId, RatingConfig, RatingTable } from '../domain/rating/types.js'
 import { allEffectiveMatches } from '../infra/db/queries/match-effective.js'
@@ -32,7 +32,7 @@ export async function replayAndPersist(
 
   await deleteSnapshotsForConfig(tx, configId)
 
-  const { table, outcomes } = replay(effectiveMatches.map(toMatchInput), config)
+  const { table, outcomes } = replay(toMatchInputs(effectiveMatches), config)
 
   const rows = effectiveMatches.flatMap((match, index) => {
     const outcome = outcomes[index]

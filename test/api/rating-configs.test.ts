@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import type { Database } from '../../src/app/types.js'
+import { ratingConfigs } from '../../src/infra/db/schema.js'
 import { seedActiveConfig, seedPlayer } from '../integration/helpers/factories.js'
 import { createTestDb, type TestDb } from '../integration/helpers/test-db.js'
 import { buildTestApp } from './helpers/app.js'
@@ -77,7 +78,92 @@ describe('POST /rating-configs', () => {
   })
 })
 
+describe('POST /rating-configs — optional Elo features', () => {
+  it('stores the features fully explicit, with every omitted default filled in', async () => {
+    const app = buildTestApp(db)
+    const response = await app.inject({
+      method: 'POST',
+      url: '/rating-configs',
+      cookies,
+      payload: {
+        name: `features-${randomUUID()}`,
+        algorithm: 'elo',
+        params: {
+          ...eloParams,
+          goalDifferenceFactor: { enabled: true },
+          eliteK: { enabled: true, k: 16 },
+          repeatOpponentDamping: { enabled: true, factor: 0.9 },
+          maxDelta: 30,
+          ratingFloor: 800,
+        },
+      },
+    })
+
+    const expected = {
+      ...eloParams,
+      expectationScale: 400,
+      goalDifferenceFactor: { enabled: true, divisor: 2, cap: 1.5 },
+      eliteK: { enabled: true, enterAt: 1500, exitAt: 1450, k: 16, requireEstablished: true },
+      repeatOpponentDamping: { enabled: true, threshold: 3, factor: 0.9, minMultiplier: 0.25 },
+      maxDelta: 30,
+      ratingFloor: 800,
+    }
+    expect(response.statusCode).toBe(201)
+    const created = response.json<{ id: string; params: unknown }>()
+    expect(created.params).toEqual(expected)
+
+    // Persisted, not just echoed: the stored jsonb no longer depends on code-level defaults.
+    const [row] = await db
+      .select({ params: ratingConfigs.params })
+      .from(ratingConfigs)
+      .where(eq(ratingConfigs.id, created.id))
+    expect(row?.params).toEqual(expected)
+
+    await app.close()
+  })
+
+  it.each([
+    [
+      'an inverted hysteresis band',
+      { eliteK: { enabled: true, k: 16, enterAt: 1400, exitAt: 1450 } },
+    ],
+    ['eliteK without k', { eliteK: { enabled: true } }],
+    ['a floor above the baseline', { ratingFloor: 1300 }],
+    ['a damping factor above 1', { repeatOpponentDamping: { enabled: true, factor: 1.2 } }],
+    ['a goal-difference cap below 1', { goalDifferenceFactor: { enabled: true, cap: 0.5 } }],
+    ['a non-positive maxDelta', { maxDelta: 0 }],
+    ['a non-positive expectationScale', { expectationScale: 0 }],
+    ['an explicit null for an optional feature', { maxDelta: null }],
+  ])('rejects %s with 400', async (_label, overrides) => {
+    const app = buildTestApp(db)
+    const response = await app.inject({
+      method: 'POST',
+      url: '/rating-configs',
+      cookies,
+      payload: {
+        name: `bad-${randomUUID()}`,
+        algorithm: 'elo',
+        params: { ...eloParams, ...overrides },
+      },
+    })
+    expect(response.statusCode).toBe(400)
+    await app.close()
+  })
+})
+
 describe('GET /rating-configs', () => {
+  it('reads a config stored before the features existed as exactly what it always meant', async () => {
+    const app = buildTestApp(db)
+    const response = await app.inject({ method: 'GET', url: '/rating-configs', cookies })
+
+    const active = response
+      .json<{ isActive: boolean; params: unknown }[]>()
+      .find((config) => config.isActive)
+    expect(active?.params).toEqual({ ...eloParams, expectationScale: 400 })
+
+    await app.close()
+  })
+
   it('lists configs including the seeded active one', async () => {
     const app = buildTestApp(db)
     const response = await app.inject({ method: 'GET', url: '/rating-configs', cookies })

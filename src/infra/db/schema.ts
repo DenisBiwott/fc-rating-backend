@@ -173,6 +173,10 @@ export const ratingSnapshots = pgTable(
     actualScore: doublePrecision('actual_score').notNull(), // 1, 0.5, 0
     delta: doublePrecision('delta').notNull(),
     gamesPlayedAfter: integer('games_played_after').notNull(),
+    // Elite-K hysteresis state after this match — replay-derived like rating_after, but not
+    // recomputable from rating_after alone (see RatingState.isElite), so the incremental path
+    // must read it back from here. Always false under a config without eliteK.
+    isEliteAfter: boolean('is_elite_after').notNull().default(false),
   },
   (table) => [
     primaryKey({ columns: [table.configId, table.matchId, table.playerId] }),

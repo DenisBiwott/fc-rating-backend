@@ -20,6 +20,16 @@ export const testEloParams: EloParams = {
 
 export const testConfig: RatingConfig = { algorithm: 'elo', params: testEloParams }
 
+/** testConfig with some params overridden — for the optional-feature tests. */
+export function configWith(overrides: Partial<EloParams>): RatingConfig {
+  return { algorithm: 'elo', params: { ...testEloParams, ...overrides } }
+}
+
+/** Builds a RatingTable from full states, for tests that need to set the elite flag. */
+export function stateTable(entries: readonly (readonly [PlayerId, RatingState])[]): RatingTable {
+  return new Map(entries)
+}
+
 /** Builds a RatingTable directly from (id, rating, gamesPlayed) triples, bypassing initialState. */
 export function seededTable(
   entries: readonly (readonly [PlayerId, number, number])[],

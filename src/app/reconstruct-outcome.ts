@@ -16,6 +16,8 @@ export interface MatchParticipants {
  * anything — used wherever outcome-shaped data is needed after the fact: recordMatch's
  * idempotent-retry path, and sessionSummary's per-match upset/delta accounting.
  * wasProvisional/upset aren't stored columns; both are cheap to derive from what is stored.
+ * The elite flag isn't reconstructed: it's engine state for a player's *next* match (read back via
+ * latestSnapshotsFor), not something any caller reads off an outcome.
  */
 export function outcomeFromSnapshotRows(
   match: MatchParticipants,

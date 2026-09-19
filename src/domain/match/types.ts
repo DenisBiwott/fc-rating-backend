@@ -7,6 +7,7 @@ export interface StoredMatch {
   readonly awayPlayerId: PlayerId
   readonly homeScore: number
   readonly awayScore: number
+  readonly sessionId: string | null
 }
 
 export type AdjustmentType = 'void' | 'correct'
@@ -39,6 +40,9 @@ export interface EffectiveMatch {
   readonly awayPlayerId: PlayerId
   readonly homeScore: number
   readonly awayScore: number
+  // A replay input: repeat-opponent damping counts meetings of a pair within one session.
+  // A correction never changes it — adjustments carry no session.
+  readonly sessionId: string | null
   readonly isVoid: boolean
 }
 

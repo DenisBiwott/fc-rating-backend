@@ -1,0 +1,1 @@
+ALTER TABLE "rating_snapshots" ADD COLUMN "is_elite_after" boolean DEFAULT false NOT NULL;

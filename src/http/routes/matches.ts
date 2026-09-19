@@ -71,7 +71,7 @@ export function registerMatchRoutes(app: FastifyInstance, deps: Deps): void {
         response: { 200: matchOutcomeSchema },
       },
     },
-    async (request) => previewMatch(deps, request.body),
+    async (request) => previewMatch(deps, omitUndefined(request.body)),
   )
 
   typed.post(

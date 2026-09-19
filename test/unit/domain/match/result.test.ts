@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { goalsAgainst, goalsFor, resultFor, toMatchInput } from '../../../../src/domain/match/result.js'
+import {
+  goalsAgainst,
+  goalsFor,
+  resultFor,
+  toMatchInputs,
+} from '../../../../src/domain/match/result.js'
 import type { EffectiveMatch } from '../../../../src/domain/match/types.js'
 import { playerId } from '../factories.js'
 
@@ -13,6 +18,7 @@ const match: EffectiveMatch = {
   awayPlayerId: bob,
   homeScore: 2,
   awayScore: 1,
+  sessionId: null,
   isVoid: false,
 }
 
@@ -52,13 +58,49 @@ describe('goalsAgainst', () => {
   })
 })
 
-describe('toMatchInput', () => {
-  it('drops id, sequence, and isVoid', () => {
-    expect(toMatchInput(match)).toEqual({
-      home: alice,
-      away: bob,
-      homeScore: 2,
-      awayScore: 1,
-    })
+describe('toMatchInputs', () => {
+  const carol = playerId('carol')
+  const inSession = (sessionId: string | null, home = alice, away = bob): EffectiveMatch => ({
+    ...match,
+    homePlayerId: home,
+    awayPlayerId: away,
+    sessionId,
+  })
+  const priors = (matches: readonly EffectiveMatch[]) =>
+    toMatchInputs(matches).map((input) => input.priorSessionMeetings)
+
+  it('drops id, sequence, isVoid, and sessionId', () => {
+    expect(toMatchInputs([match])).toEqual([
+      { home: alice, away: bob, homeScore: 2, awayScore: 1, priorSessionMeetings: 0 },
+    ])
+  })
+
+  it('counts earlier meetings of the same pair within a session, either way round', () => {
+    expect(
+      priors([
+        inSession('s1'),
+        inSession('s1', bob, alice),
+        inSession('s1'),
+        inSession('s1', bob, alice),
+      ]),
+    ).toEqual([0, 1, 2, 3])
+  })
+
+  it('counts each pair separately', () => {
+    expect(priors([inSession('s1'), inSession('s1', alice, carol), inSession('s1')])).toEqual([
+      0, 0, 1,
+    ])
+  })
+
+  it('starts every session from zero', () => {
+    expect(priors([inSession('s1'), inSession('s2'), inSession('s1'), inSession('s2')])).toEqual([
+      0, 0, 1, 1,
+    ])
+  })
+
+  it('never counts a match with no session as a repeat, nor lets it count toward one', () => {
+    expect(priors([inSession(null), inSession(null), inSession('s1'), inSession(null)])).toEqual([
+      0, 0, 0, 0,
+    ])
   })
 })

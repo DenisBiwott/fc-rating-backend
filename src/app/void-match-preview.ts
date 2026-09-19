@@ -1,4 +1,4 @@
-import { toMatchInput } from '../domain/match/result.js'
+import { toMatchInputs } from '../domain/match/result.js'
 import { replay } from '../domain/rating/engine.js'
 import type { PlayerId } from '../domain/rating/types.js'
 import { allEffectiveMatches } from '../infra/db/queries/match-effective.js'
@@ -45,7 +45,7 @@ export async function previewVoidMatch(deps: Deps, matchId: string): Promise<Voi
   const effectiveMatches = (await allEffectiveMatches(deps.db)).filter(
     (match) => !match.isVoid && match.id !== matchId,
   )
-  const { table: afterTable } = replay(effectiveMatches.map(toMatchInput), config)
+  const { table: afterTable } = replay(toMatchInputs(effectiveMatches), config)
 
   const affected = diffAffectedPlayers(beforeSnapshots, afterTable)
   const players: VoidMatchPreviewPlayer[] = affected.map((playerId) => ({
