@@ -65,6 +65,7 @@ export function registerPlayerRoutes(app: FastifyInstance, deps: Deps): void {
       const players = await listPlayers(deps, omitUndefined(request.query))
       return players.map((player) => ({
         ...toPlayerDto(player),
+        createdAt: player.createdAt.toISOString(),
         lastPlayedAt: player.lastPlayedAt?.toISOString() ?? null,
       }))
     },

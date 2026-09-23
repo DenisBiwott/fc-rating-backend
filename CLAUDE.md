@@ -122,10 +122,19 @@ runs once per config variant (see Scars for why the old one proved nothing). Not
 production yet: no config uses the features, and there's still no activate endpoint — adopting
 one means inserting it, flipping `is_active` by hand, and rebuilding. 265 tests pass (was 137).
 
-Build order lives in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The
-full product/
-data/API design lives in `../fc-rating-platform-design.md` (one directory up, outside this repo —
-a planning document, not committed here). This repo's docs are a distillation of the sections
+**Turn 3 contract additions, 2026-09-23** (for the frontend's desktop/tablet/TV work — see
+`fc-rating-frontend/CLAUDE.md`). `GET /players` list items gained `createdAt` (already on the row,
+no new query — the roster table's Joined column). `GET /matches` items gained a nullable `outcome`
+(the same `matchOutcomeSchema` and null-when-voided rule `GET /matches/:id` already used — TV
+mode's per-match deltas and UPSET badge), one batched snapshot query per page.
+`outcomesByMatchId` (`src/app/reconstruct-outcome.ts`) groups snapshot rows by match and rebuilds
+each outcome; `sessionSummary` now uses it instead of its own copy of that loop. 166 unit + 114
+API/integration tests pass.
+
+Build order lives in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). The product/UI design lives in
+`../DESIGN-SPEC.md` (one directory up, outside this repo — a planning document, not committed
+here); the original data/API design doc is retired, so this repo's docs, schema and
+`openapi.json` are the source of truth for data and behaviour. This repo's docs are a distillation of the sections
 that govern it; if the two ever disagree, treat that as a bug in this repo's docs and flag it
 rather than silently trusting one side.
 

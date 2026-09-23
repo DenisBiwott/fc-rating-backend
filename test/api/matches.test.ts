@@ -196,6 +196,38 @@ describe('GET /matches and GET /matches/:id', () => {
     await app.close()
   })
 
+  it('carries each match\'s outcome — identical to the one recorded — and null once voided', async () => {
+    const app = buildTestApp(db)
+    const keptId = randomUUID()
+    const voidedId = randomUUID()
+    const recorded = await app.inject({
+      method: 'POST',
+      url: '/matches',
+      cookies,
+      payload: { id: keptId, homePlayerId: playerAId, awayPlayerId: playerBId, homeScore: 3, awayScore: 1 },
+    })
+    await app.inject({
+      method: 'POST',
+      url: '/matches',
+      cookies,
+      payload: { id: voidedId, homePlayerId: playerBId, awayPlayerId: playerAId, homeScore: 2, awayScore: 0 },
+    })
+    await app.inject({
+      method: 'POST',
+      url: `/matches/${voidedId}/void`,
+      cookies,
+      payload: { reason: 'Wrong players' },
+    })
+
+    const list = await app.inject({ method: 'GET', url: '/matches?includeVoided=true' })
+    const items = list.json<{ items: { id: string; outcome: unknown }[] }>().items
+    expect(items.map((m) => m.id)).toEqual([voidedId, keptId])
+    expect(items[0]?.outcome).toBeNull()
+    expect(items[1]?.outcome).toEqual(recorded.json<{ outcome: unknown }>().outcome)
+
+    await app.close()
+  })
+
   it('are public — no session required', async () => {
     const app = buildTestApp(db)
     const matchId = randomUUID()

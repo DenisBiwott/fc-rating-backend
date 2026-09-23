@@ -1,10 +1,10 @@
 import type { PlayerId } from '../domain/rating/types.js'
 import { effectiveMatchesForSession } from '../infra/db/queries/match-effective.js'
-import { snapshotsForMatches, type SnapshotRow } from '../infra/db/queries/matches.js'
+import { snapshotsForMatches } from '../infra/db/queries/matches.js'
 import { getActiveRatingConfig } from '../infra/db/queries/rating-configs.js'
 import { findSessionById } from '../infra/db/queries/sessions.js'
 import { SessionNotFoundError } from './errors.js'
-import { outcomeFromSnapshotRows } from './reconstruct-outcome.js'
+import { outcomesByMatchId } from './reconstruct-outcome.js'
 import type { Deps } from './types.js'
 
 export interface PlayerSessionDelta {
@@ -40,23 +40,14 @@ export async function sessionSummary(deps: Deps, sessionId: string): Promise<Ses
     matches.map((match) => match.id),
   )
 
-  const snapshotsByMatch = new Map<string, SnapshotRow[]>()
-  for (const snapshot of snapshots) {
-    const forMatch = snapshotsByMatch.get(snapshot.matchId) ?? []
-    forMatch.push(snapshot)
-    snapshotsByMatch.set(snapshot.matchId, forMatch)
-  }
+  // A match this session might not have snapshots under the *current* config if the config
+  // changed since — outcomesByMatchId skips it rather than guessing.
+  const outcomes = outcomesByMatchId(matches, snapshots, config.params.provisionalGames)
 
   const deltaByPlayer = new Map<PlayerId, number>()
   let upsetCount = 0
 
-  for (const match of matches) {
-    const matchSnapshots = snapshotsByMatch.get(match.id) ?? []
-    // A match this session might not have snapshots under the *current* config if the config
-    // changed since — skip rather than guess. Every match recorded normally has exactly two.
-    if (matchSnapshots.length < 2) continue
-
-    const outcome = outcomeFromSnapshotRows(match, matchSnapshots, config.params.provisionalGames)
+  for (const outcome of outcomes.values()) {
     if (outcome.upset) upsetCount += 1
     deltaByPlayer.set(
       outcome.home.playerId,

@@ -13,8 +13,10 @@ export const playerSchema = z.object({
 
 // A richer shape than playerSchema for the list endpoint only — lastPlayedAt would need an extra
 // query on every POST/PATCH response for a field those endpoints have no use for, so it's kept off
-// the shared playerSchema deliberately.
+// the shared playerSchema deliberately. createdAt is free (it's on the row) but only the roster
+// table's Joined column uses it, so it lives here too.
 export const playerListItemSchema = playerSchema.extend({
+  createdAt: z.iso.datetime(),
   lastPlayedAt: z.iso.datetime().nullable(),
 })
 

@@ -6,9 +6,8 @@ frontend repo consumes. Errors are RFC 9457 Problem Details
 (`application/problem+json`), including Zod validation detail. Lists are cursor-paginated
 (`?cursor=&limit=`, cursor = `sequence`).
 
-The full route table (methods, roles, request/response shapes) lives in design doc §6
-(`../fc-rating-platform-design.md`) and, once generated, in `openapi.json` itself — treat the
-generated file as more current than this doc for exact shapes. This page covers what doesn't
+The full route table (methods, roles, request/response shapes) lives in the generated
+`openapi.json` — treat it as more current than this doc for exact shapes. This page covers what doesn't
 show up in a route list.
 
 ## Auth
