@@ -99,7 +99,9 @@ export const listMatchesQuerySchema = paginationQuerySchema.extend({
     .optional(),
 })
 
-export const listMatchesResponseSchema = paginatedResponseSchema(effectiveMatchDetailSchema)
+export const listMatchesResponseSchema = paginatedResponseSchema(
+  effectiveMatchDetailSchema.extend({ outcome: matchOutcomeSchema.nullable() }),
+)
 
 export const matchDetailResponseSchema = z.object({
   match: effectiveMatchDetailSchema,

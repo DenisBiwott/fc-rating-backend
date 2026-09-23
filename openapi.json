@@ -343,6 +343,11 @@
                       "isActive": {
                         "type": "boolean"
                       },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      },
                       "lastPlayedAt": {
                         "anyOf": [
                           {
@@ -361,6 +366,7 @@
                       "name",
                       "avatarUrl",
                       "isActive",
+                      "createdAt",
                       "lastPlayedAt"
                     ],
                     "additionalProperties": false
@@ -1494,6 +1500,189 @@
                           },
                           "decidedOnPenalties": {
                             "type": "boolean"
+                          },
+                          "outcome": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "home": {
+                                    "type": "object",
+                                    "properties": {
+                                      "playerId": {
+                                        "type": "string"
+                                      },
+                                      "before": {
+                                        "type": "object",
+                                        "properties": {
+                                          "rating": {
+                                            "type": "number"
+                                          },
+                                          "gamesPlayed": {
+                                            "type": "number"
+                                          }
+                                        },
+                                        "required": [
+                                          "rating",
+                                          "gamesPlayed"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "after": {
+                                        "type": "object",
+                                        "properties": {
+                                          "rating": {
+                                            "type": "number"
+                                          },
+                                          "gamesPlayed": {
+                                            "type": "number"
+                                          }
+                                        },
+                                        "required": [
+                                          "rating",
+                                          "gamesPlayed"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "expectedScore": {
+                                        "type": "number"
+                                      },
+                                      "actualScore": {
+                                        "anyOf": [
+                                          {
+                                            "type": "number",
+                                            "enum": [
+                                              1
+                                            ]
+                                          },
+                                          {
+                                            "type": "number",
+                                            "enum": [
+                                              0.5
+                                            ]
+                                          },
+                                          {
+                                            "type": "number",
+                                            "enum": [
+                                              0
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      "delta": {
+                                        "type": "number"
+                                      },
+                                      "wasProvisional": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "playerId",
+                                      "before",
+                                      "after",
+                                      "expectedScore",
+                                      "actualScore",
+                                      "delta",
+                                      "wasProvisional"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "away": {
+                                    "type": "object",
+                                    "properties": {
+                                      "playerId": {
+                                        "type": "string"
+                                      },
+                                      "before": {
+                                        "type": "object",
+                                        "properties": {
+                                          "rating": {
+                                            "type": "number"
+                                          },
+                                          "gamesPlayed": {
+                                            "type": "number"
+                                          }
+                                        },
+                                        "required": [
+                                          "rating",
+                                          "gamesPlayed"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "after": {
+                                        "type": "object",
+                                        "properties": {
+                                          "rating": {
+                                            "type": "number"
+                                          },
+                                          "gamesPlayed": {
+                                            "type": "number"
+                                          }
+                                        },
+                                        "required": [
+                                          "rating",
+                                          "gamesPlayed"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "expectedScore": {
+                                        "type": "number"
+                                      },
+                                      "actualScore": {
+                                        "anyOf": [
+                                          {
+                                            "type": "number",
+                                            "enum": [
+                                              1
+                                            ]
+                                          },
+                                          {
+                                            "type": "number",
+                                            "enum": [
+                                              0.5
+                                            ]
+                                          },
+                                          {
+                                            "type": "number",
+                                            "enum": [
+                                              0
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      "delta": {
+                                        "type": "number"
+                                      },
+                                      "wasProvisional": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "playerId",
+                                      "before",
+                                      "after",
+                                      "expectedScore",
+                                      "actualScore",
+                                      "delta",
+                                      "wasProvisional"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "upset": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "home",
+                                  "away",
+                                  "upset"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         },
                         "required": [
@@ -1508,7 +1697,8 @@
                           "sessionId",
                           "recordedBy",
                           "recordedAt",
-                          "decidedOnPenalties"
+                          "decidedOnPenalties",
+                          "outcome"
                         ],
                         "additionalProperties": false
                       }

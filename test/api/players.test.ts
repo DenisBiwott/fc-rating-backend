@@ -113,6 +113,19 @@ describe('GET /players', () => {
     await app.close()
   })
 
+  it('reports each player\'s createdAt as an ISO timestamp', async () => {
+    const app = buildTestApp(db)
+    const created = await app.inject({ method: 'POST', url: '/players', cookies, payload: { name: 'Gus' } })
+    const gusId = created.json<{ id: string }>().id
+
+    const list = await app.inject({ method: 'GET', url: '/players' })
+    const gus = list.json<Array<{ id: string; createdAt: string }>>().find((p) => p.id === gusId)
+    expect(gus?.createdAt).toBeDefined()
+    expect(new Date(gus?.createdAt ?? '').toISOString()).toBe(gus?.createdAt)
+
+    await app.close()
+  })
+
   it('is public — no session required', async () => {
     const app = buildTestApp(db)
     const response = await app.inject({ method: 'GET', url: '/players' })

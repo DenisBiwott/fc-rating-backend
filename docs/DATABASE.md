@@ -36,8 +36,8 @@ are outside what Drizzle's builder can express, so they're hand-written in a cus
   `(config_id, player_id, match_sequence desc)` for "latest snapshot per player" lookups.
 
 Full column list and constraint SQL: `src/infra/db/schema.ts` (generated migration:
-`src/infra/db/migrations/0000_*.sql`), or the design doc §4 (`../fc-rating-platform-design.md`)
-for the original DDL this schema was built from.
+`src/infra/db/migrations/0000_*.sql`). The original design doc's DDL is retired; the schema and
+migrations are the source of truth.
 
 ## Views (not tables)
 
