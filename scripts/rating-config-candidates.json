@@ -28,6 +28,34 @@
     }
   },
   {
+    "name": "elo-tuned-v2",
+    "algorithm": "elo",
+    "params": {
+      "baseline": 1200,
+      "kProvisional": 40,
+      "provisionalGames": 20,
+      "kEstablished": 16,
+      "drawScore": 0.5,
+      "expectationScale": 400,
+      "goalDifferenceFactor": { "enabled": true, "divisor": 3, "cap": 1.5 },
+      "eliteK": {
+        "enabled": true,
+        "enterAt": 1350,
+        "exitAt": 1320,
+        "k": 14,
+        "requireEstablished": true
+      },
+      "repeatOpponentDamping": {
+        "enabled": false,
+        "threshold": 3,
+        "factor": 0.85,
+        "minMultiplier": 0.3
+      },
+      "maxDelta": 35,
+      "ratingFloor": 900
+    }
+  },
+  {
     "name": "elo-tuned-v1-k-lower",
     "algorithm": "elo",
     "params": {

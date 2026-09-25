@@ -1,13 +1,11 @@
 import 'dotenv/config'
-import { readFile } from 'node:fs/promises'
-import { z } from 'zod'
 import { evaluateRatingConfigs, type ConfigEvaluation } from '../src/app/evaluate-rating-configs.js'
 import { COIN_FLIP_SCORE } from '../src/domain/rating/evaluation.js'
-import { createRatingConfigBodySchema } from '../src/http/schemas/rating-config.js'
 import { systemClock } from '../src/infra/clock.js'
 import { createDbClient } from '../src/infra/db/client.js'
 import { systemIds } from '../src/infra/ids.js'
 import { consoleLogger } from '../src/infra/logger.js'
+import { loadCandidates, printTable } from './rating-config-cli.js'
 
 /**
  * Scores every stored rating config — plus any candidates in a JSON file — against the full
@@ -22,22 +20,6 @@ if (databaseUrl === undefined) {
   throw new Error('DATABASE_URL is not set — copy .env.example to .env first.')
 }
 
-// Candidates use the exact body POST /rating-configs accepts, parsed by the same schema — so a
-// candidate is scored with the defaults it would be stored with, and an entry can be POSTed as-is.
-async function loadCandidates(path: string | undefined) {
-  if (path === undefined) return []
-  const parsed = z
-    .array(createRatingConfigBodySchema)
-    .safeParse(JSON.parse(await readFile(path, 'utf8')))
-  if (!parsed.success) {
-    console.error(
-      `${path} isn't a list of valid rating-config bodies:\n${z.prettifyError(parsed.error)}`,
-    )
-    process.exit(1)
-  }
-  return parsed.data
-}
-
 const fixed = (value: number | null, digits = 4) => (value === null ? '—' : value.toFixed(digits))
 
 function vsActiveColumn(evaluation: ConfigEvaluation): string {
@@ -50,14 +32,8 @@ function vsActiveColumn(evaluation: ConfigEvaluation): string {
   return `${sign}${difference.toFixed(4)} ± ${(2 * standardError).toFixed(4)}  ${verdict}`
 }
 
-function printTable(rows: readonly string[][]): void {
-  const widths =
-    rows[0]?.map((_, column) => Math.max(...rows.map((row) => row[column]?.length ?? 0))) ?? []
-  for (const row of rows)
-    console.log(row.map((cell, column) => cell.padEnd(widths[column] ?? 0)).join('  '))
-}
-
-const candidates = await loadCandidates(process.argv[2])
+const candidatesPath = process.argv[2]
+const candidates = candidatesPath === undefined ? [] : await loadCandidates(candidatesPath)
 const target = new URL(databaseUrl)
 const db = createDbClient(databaseUrl)
 

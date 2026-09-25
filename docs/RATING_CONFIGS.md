@@ -31,12 +31,12 @@ reject a write. That makes it safe to run against production.
 
 ### Reading the output
 
-| Column                  | Meaning                                                                                                                                                                                                                              |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Brier**               | Mean of (expected score − actual score)² per match. 0 is perfect; always predicting 0.5 scores 0.25. Lower is better, and rows are ranked by it.                                                                                     |
-| **log loss**            | The same predictions scored by cross-entropy, which punishes a confident miss much harder than Brier does. A coin flip scores ln 2 ≈ 0.693.                                                                                          |
-| **Brier (established)** | Only matches where both players had finished their provisional games, i.e. the steady state a config is really tuned for. The number in brackets is how many such matches there were.                                                |
-| **vs active (± 2 SE)**  | Paired against the active config, match by match: the mean difference in squared error (negative means the candidate predicted better) and two standard errors. Marked `better`/`worse` only outside that margin, `noise` inside it. |
+| Column                  | Meaning                                                                                                                                                                                                                                                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Brier**               | Mean of (expected score − actual score)² per match. 0 is perfect; always predicting 0.5 scores 0.25. Lower is better, and rows are ranked by it.                                                                                                                                                                                      |
+| **log loss**            | The same predictions scored by cross-entropy, which punishes a confident miss much harder than Brier does. A coin flip scores ln 2 ≈ 0.693.                                                                                                                                                                                           |
+| **Brier (established)** | Only matches where both players had finished their provisional games, i.e. the steady state a config is really tuned for. The number in brackets is how many such matches there were. A config with a different `provisionalGames` counts a different set of matches here, so only compare this column between configs that share it. |
+| **vs active (± 2 SE)**  | Paired against the active config, match by match: the mean difference in squared error (negative means the candidate predicted better) and two standard errors. Marked `better`/`worse` only outside that margin, `noise` inside it.                                                                                                  |
 
 Pairing matters. Comparing two Brier scores side by side mixes in how hard each match was to
 call. The paired difference cancels that out, so it can tell configs apart with far fewer matches.
@@ -51,11 +51,113 @@ the floor and `maxDelta` never bit.
   exist partly for fairness and stability. A config can score slightly worse and still be the
   right choice.
 - **Small samples are mostly noise.** With a few dozen matches almost every difference is inside
-  the error bars. Re-evaluate after 100 or more real matches, and don't chase differences marked
-  `noise`.
+  the error bars, and don't chase differences marked `noise`. How many matches is enough depends
+  on how spread out the group's skill is; `pnpm ratings:simulate` (next section) measures it.
 - **Trying many candidates on one small history overfits.** The best of twenty candidates on 80
   matches is partly lucky. Prefer the simpler config unless a candidate is clearly better, and
   re-check as matches accumulate.
+- **Verdicts on one history aren't independent.** Every candidate is paired against the same
+  matches, so a handful of lucky upsets pushes every similar candidate the same way at once. Five
+  `noise` leans in one direction are closer to one piece of evidence than to five.
+
+## Can the evaluator tell configs apart yet?
+
+```
+pnpm ratings:simulate scripts/rating-config-candidates.json [--baseline <name>] [--players 11] \
+  [--matches 100,300,600] [--sigma 100,150,200] [--leagues 400] [--seed 1]
+```
+
+A `noise` verdict can mean "these configs predict equally well" or "there isn't enough data to
+tell". The real history can't distinguish those, so this simulates many leagues where the answer
+is known. Each player gets a true skill, matches are played from it, and every candidate is
+replayed through the real engine and judged by the evaluator's own ±2 SE rule. No database is
+involved. The baseline defaults to the first candidate in the file.
+
+**Match the simulation to your data first.** `--sigma` is the standard deviation of true skill,
+in Elo points. Your group's isn't known directly, so it's inferred from two numbers: the active
+config's **Brier** from `ratings:evaluate`, and the leaderboard's **spread** (top rating minus
+bottom). Each block prints where the middle 80% of simulated leagues landed on both. Run a wide σ
+range at your real `--players` and `--matches`: the plausible σ values are the ones whose ranges
+contain both of your numbers. Use the ranges, not a single average. The real league is one draw,
+and at a hundred-odd matches Brier on its own barely narrows σ down. Then read the tables across
+that whole σ range, adding larger `--matches` values to see when a difference would become
+detectable.
+
+| Column                              | Meaning                                                                                                                                |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **Brier**                           | The mean Brier across the simulated leagues: what `ratings:evaluate` would print on such a league, on average.                         |
+| **verdict: better / noise / worse** | How often the evaluator's verdict against the baseline came out each way. Mostly `noise` means the evaluator is blind at this size.    |
+| **wrong calls**                     | How often a `better`/`worse` verdict pointed the opposite way from the truth. This is what tells you whether a verdict can be trusted. |
+| **truly better**                    | How often the candidate's predictions really were closer to the true probabilities than the baseline's. Near 50% means no real gap.    |
+| **rank ρ**                          | Spearman correlation between final ratings and true skills: how right the leaderboard's order is (1 = perfect).                        |
+
+What the model assumes, and so what it can't tell you:
+
+- **Skills are fixed.** Real players improve, which favours a higher K than the simulation will.
+- **Goals are Poisson**, with each side's scoring rate tilted by the skill gap. That makes goal
+  difference genuinely informative, so it flatters `goalDifferenceFactor`. Real blowouts partly
+  reflect someone giving up.
+- **Everyone is there from the start**, and opponents are drawn at random, weighted by how active
+  each player is. There's no home advantage.
+
+### What it showed at 117 matches (2026-09-25)
+
+**Where our group sits.** Production had a Brier of 0.1952 under the active config and a
+leaderboard spread of 366 points. Matching the Brier's simulated _average_ first suggested
+σ ≈ 100, which was wrong: at σ 100 a single league's Brier ranges 0.175–0.213, so it barely
+narrows σ down, while only 2% of σ 100 leagues reach a 366-point spread. Taking both numbers
+together, σ ≈ 150–250 is plausible, most likely around 200.
+
+**What that means at our size** (σ 150–200, 117 matches):
+
+- **The all-`noise` result was expected.** The evaluator catches a real difference only about
+  20–58% of the time here. Wrong calls stayed at 0–1% in every block.
+- **Bigger steps help now, but not for long.** Higher K and steeper goal difference are truly
+  better in about 80–98% of simulated leagues, and that edge fades as the league matures (by 1000
+  matches at σ 150, lower K is the better one). Early on, ratings are far from the truth and big
+  steps close the gap; later they're close and big steps mostly add noise. A single league-wide K
+  can't be right at both ends.
+- **Part of what goal difference seems to add is just a bigger K.** Its multiplier averages
+  about 1.3, so turning it on also raises how far ratings move.
+- **Tuning doesn't fix the leaderboard's order; matches do.** Every candidate ranked players
+  about equally well (rank ρ ≈ 0.82–0.86 at 117 matches). More matches is what raises it.
+
+**The candidate this led to: `elo-tuned-v2`.** It's `elo-tuned-v1` with K 40 for a player's first
+20 games, then 16. The step size follows each player's maturity instead of the league's: a
+rating is unreliable while its player has few games, however old the league is, and a friend who
+joins at match 500 gets the same treatment. That is Glicko's idea approximated with an existing
+parameter. Three shapes were tried, in simulation only, so the real history played no part in
+choosing: 20 games then 20, 20 then 16, and 30 then 20. This was the only one truly better than
+`elo-tuned-v1` at every stage at both σ 150 and σ 200 (69–94% and 87–98% of leagues, from 117 to
+1000 matches), at a small early cost at σ 100 (28% at 117 matches, even by 600). Its elite K
+stays 14, as tested, which is now barely below the established 16; revisit `eliteK` separately.
+
+Adopting it changes more than the numbers. `provisionalGames` 20 puts `PROV x/20` back on anyone
+with 10–19 games (the frontend reads it from `/leaderboard`), and the rebuild rewrites every
+rating, so the order will shift. After creating it (inactive), see the result first with
+**Rating configs → Preview the leaderboard a rating config would produce**.
+
+**Decision rule, fixed before running it against production.** At 117 matches the evaluator
+catches `elo-tuned-v2`'s edge only 13–30% of the time, so waiting for `better` would mean waiting
+months. The case for it is the simulation plus the reasoning above, and the real history can
+only veto it. Run `ratings:evaluate` on production and read only `elo-tuned-v2`'s
+`vs active` row:
+
+- **Negative difference** (`better`, or `noise` leaning better): consistent with the simulation.
+  Preview the leaderboard, then adopt if the reshuffle is acceptable.
+- **Positive difference**: the real history disagrees with the simulation's assumptions (players
+  improving, or goal difference behaving differently in real games). Don't adopt; re-check at
+  about 300 matches.
+
+**Result (2026-09-25, 125 matches): not adopted.** `elo-tuned-v2` came out at +0.0048 ± 0.0053
+against the active config, leaning worse, while `elo-tuned-v1-k-higher` again leaned better
+(−0.0015). The real history disagrees with the simulation, and the likeliest assumption at fault is
+fixed skills: v2 drops experienced players to K 16, which would be too slow if people are still
+improving, and a simulation without improvement can't see that. Don't answer this by tuning new
+variants against these same matches; test the assumption instead (add skill drift to the
+simulation and see whether v2's edge survives), then re-check at about 300 matches.
+
+Next check either way: both tools at about 300 and 600 matches.
 
 ## Adopt a config
 

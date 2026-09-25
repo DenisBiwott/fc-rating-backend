@@ -26,7 +26,8 @@
     "generate:openapi:check": "tsx scripts/generate-openapi.ts --check",
     "generate:postman": "tsx scripts/generate-postman.ts",
     "generate:postman:check": "tsx scripts/generate-postman.ts --check",
-    "ratings:evaluate": "tsx scripts/evaluate-rating-configs.ts"
+    "ratings:evaluate": "tsx scripts/evaluate-rating-configs.ts",
+    "ratings:simulate": "tsx scripts/simulate-rating-configs.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",

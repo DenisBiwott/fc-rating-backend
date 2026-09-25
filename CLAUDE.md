@@ -118,9 +118,11 @@ level in tests, and confirmed by rebuilding the dev database's 142 snapshot rows
 previous code) byte for byte. Migration `0002_snapshot_elite_flag` adds
 `rating_snapshots.is_elite_after`, the hysteresis state the incremental path reads back.
 `POST /matches/preview` accepts an optional `sessionId`. The rebuild-equals-incremental test now
-runs once per config variant (see Scars for why the old one proved nothing). Not adopted in
-production yet: no config uses the features, and there's still no activate endpoint — adopting
-one means inserting it, flipping `is_active` by hand, and rebuilding. 265 tests pass (was 137).
+runs once per config variant (see Scars for why the old one proved nothing). Adopted in
+production as `tuned-elo-v1`: on 2026-09-25 `ratings:evaluate` found it predicting identically to
+the `elo-tuned-v1` candidate on all 117 matches (paired difference exactly 0; params not compared
+directly). There's still no activate endpoint — adopting a config means inserting it, flipping
+`is_active` by hand, and rebuilding. 265 tests pass (was 137).
 
 **Turn 3 contract additions, 2026-09-23** (for the frontend's desktop/tablet/TV work — see
 `fc-rating-frontend/CLAUDE.md`). `GET /players` list items gained `createdAt` (already on the row,
@@ -193,10 +195,10 @@ constraint throws `DrizzleQueryError`, not the underlying `PostgresError`.** The
   shared connection** (`drizzle-orm/postgres-js/driver.js`'s `construct()` overwrites
   `client.options.parsers` for date/time OIDs with an identity function, so its own query builder
   can do schema-aware date mapping instead). A raw `db.execute(sql\`...\`)` query has no Drizzle
-  column metadata to map with, so any timestamp column it selects comes back as Postgres's text
-  format (`'2026-09-09 08:01:00.924+00'`), not a JS `Date` — unlike an identical-looking column
-  read through `.select().from(table)`. Convert explicitly with `src/infra/db/raw-timestamp.ts`'s
-  `parseTimestamp()` wherever a raw query selects one.
+column metadata to map with, so any timestamp column it selects comes back as Postgres's text
+format (`'2026-09-09 08:01:00.924+00'`), not a JS `Date`— unlike an identical-looking column
+read through`.select().from(table)`. Convert explicitly with `src/infra/db/raw-timestamp.ts`'s
+`parseTimestamp()` wherever a raw query selects one.
 - **A route registered synchronously (a bare `app.get()`/`app.post()`) runs before any pending
   `app.register(...)` plugin's body has executed.** Fastify's `onRoute` hooks fire once, at the
   moment a route is added, over whatever hooks already exist at that instant — they never fire
@@ -252,14 +254,14 @@ wall-clock input — it would break replay determinism.
 
 ## Where to look
 
-| Doc                                              | Read it when                                                                     |
-| ------------------------------------------------ | -------------------------------------------------------------------------------- |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)     | Layer boundaries, domain model, effective-match/replay design, concurrency model |
-| [docs/DATABASE.md](docs/DATABASE.md)             | Schema, constraints, views, migrations, seeds                                    |
-| [docs/API.md](docs/API.md)                       | Routes, auth/roles, error format, idempotency contract                           |
-| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)       | Local setup, build order, scripts, running tests                                 |
-| [docs/CONFIGURATION.md](docs/CONFIGURATION.md)   | Env vars                                                                         |
-| [docs/TESTING.md](docs/TESTING.md)               | Testing strategy per layer, CI quality gates                                     |
-| [docs/RATING_CONFIGS.md](docs/RATING_CONFIGS.md) | Evaluating candidate rating configs (`pnpm ratings:evaluate`), adopting one      |
-| [docs/POSTMAN.md](docs/POSTMAN.md)               | Importing and using the Postman collection, keeping it generated                 |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)         | Docker Compose, VPS, migrations, backups                                         |
+| Doc                                              | Read it when                                                                                    |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)     | Layer boundaries, domain model, effective-match/replay design, concurrency model                |
+| [docs/DATABASE.md](docs/DATABASE.md)             | Schema, constraints, views, migrations, seeds                                                   |
+| [docs/API.md](docs/API.md)                       | Routes, auth/roles, error format, idempotency contract                                          |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)       | Local setup, build order, scripts, running tests                                                |
+| [docs/CONFIGURATION.md](docs/CONFIGURATION.md)   | Env vars                                                                                        |
+| [docs/TESTING.md](docs/TESTING.md)               | Testing strategy per layer, CI quality gates                                                    |
+| [docs/RATING_CONFIGS.md](docs/RATING_CONFIGS.md) | Evaluating candidate rating configs (`pnpm ratings:evaluate`, `ratings:simulate`), adopting one |
+| [docs/POSTMAN.md](docs/POSTMAN.md)               | Importing and using the Postman collection, keeping it generated                                |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)         | Docker Compose, VPS, migrations, backups                                                        |
