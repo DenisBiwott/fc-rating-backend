@@ -6,7 +6,7 @@ import { effectiveMatchById } from '../infra/db/queries/match-effective.js'
 import { findMatchById } from '../infra/db/queries/matches.js'
 import { getActiveRatingConfig } from '../infra/db/queries/rating-configs.js'
 import { allLatestSnapshots } from '../infra/db/queries/ratings.js'
-import { MatchNotFoundError } from './errors.js'
+import { MatchAlreadyVoidError, MatchNotFoundError } from './errors.js'
 import { diffAffectedPlayers, replayAndPersist } from './replay.js'
 import type { Deps } from './types.js'
 
@@ -33,6 +33,12 @@ export async function voidMatch(deps: Deps, input: VoidMatchInput): Promise<Void
   return deps.db.transaction(async (tx) => {
     const { id: configId, config } = await getActiveRatingConfig(tx)
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${configId}))`)
+
+    // Checked under the lock, not before taking it: two voids of one match (a stale screen still
+    // showing it, or a double submit) would otherwise both pass and append two void adjustments.
+    // The second waits on the lock, and its read here sees the first one's committed void.
+    const current = await effectiveMatchById(tx, input.matchId)
+    if (current?.isVoid === true) throw new MatchAlreadyVoidError(input.matchId)
 
     const before = await allLatestSnapshots(tx, configId)
 

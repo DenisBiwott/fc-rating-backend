@@ -12,6 +12,13 @@ export class MatchNotFoundError extends Error {
   }
 }
 
+export class MatchAlreadyVoidError extends Error {
+  constructor(matchId: string) {
+    super(`Match already void: ${matchId}`)
+    this.name = 'MatchAlreadyVoidError'
+  }
+}
+
 export class PlayerNotFoundError extends Error {
   constructor(playerId: string) {
     super(`Player not found: ${playerId}`)

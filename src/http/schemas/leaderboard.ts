@@ -16,8 +16,14 @@ const leaderboardEntrySchema = z.object({
   isProvisional: z.boolean(),
 })
 
+/** Omitted: the latest session's table (all-time if no session exists). */
+export const leaderboardQuerySchema = z.object({
+  session: z.union([z.literal('all-time'), z.uuid()]).optional(),
+})
+
 export const leaderboardResponseSchema = z.object({
   entries: z.array(leaderboardEntrySchema),
   meanRating: z.number(),
   ratingConfig: z.object({ name: z.string(), provisionalGames: z.number().int() }),
+  session: z.object({ id: z.string(), name: z.string() }).nullable(),
 })
