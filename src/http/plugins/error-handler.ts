@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { hasZodFastifySchemaValidationErrors, isResponseSerializationError } from 'fastify-type-provider-zod'
 import {
   InvalidCredentialsError,
+  MatchAlreadyVoidError,
   MatchNotFoundError,
   MatchValidationError,
   PlayerHasMatchesError,
@@ -38,6 +39,10 @@ const errorMappings: readonly [test: (error: unknown) => boolean, mapping: Probl
   [
     (e) => e instanceof MatchValidationError,
     { status: 422, type: 'validation-error', title: 'Unprocessable Entity' },
+  ],
+  [
+    (e) => e instanceof MatchAlreadyVoidError,
+    { status: 409, type: 'conflict', title: 'Conflict' },
   ],
   [
     (e) => e instanceof SessionAlreadyClosedError,

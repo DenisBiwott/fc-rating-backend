@@ -652,21 +652,29 @@
       "name": "Leaderboard",
       "item": [
         {
-          "name": "Get the current leaderboard",
+          "name": "Get the leaderboard (latest session by default)",
           "event": [],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/leaderboard",
+              "raw": "{{baseUrl}}/leaderboard?session=",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "leaderboard"
+              ],
+              "query": [
+                {
+                  "key": "session",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Optional."
+                }
               ]
             },
-            "description": "Get the current leaderboard\n\n`GET /leaderboard` · operationId `getLeaderboard`\n\nNo login needed."
+            "description": "Get the leaderboard (latest session by default)\n\n`GET /leaderboard` · operationId `getLeaderboard`\n\nNo login needed.\n\nWithout `session`: the open session's table (else the most recently closed one; all-time if no session exists). Set `session` to `all-time`, or to a session id such as `{{sessionId}}`."
           }
         }
       ]
@@ -780,6 +788,45 @@
               ]
             },
             "description": "Get a session summary\n\n`GET /sessions/{id}` · operationId `getSessionSummary`\n\nNo login needed."
+          }
+        },
+        {
+          "name": "Rename a session",
+          "event": [],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"FC 26\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sessions/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "sessions",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{sessionId}}"
+                }
+              ]
+            },
+            "description": "Rename a session (requires recorder role)\n\n`PATCH /sessions/{id}` · operationId `renameSession`\n\nRequires the **recorder** role — run Auth → Log in first.\n\nUses `{{sessionId}}`, captured by \"Open a new session\". Works on closed sessions too."
           }
         },
         {

@@ -1,12 +1,17 @@
 import { randomUUID } from 'node:crypto'
-import { sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { correctMatch } from '../../src/app/correct-match.js'
-import { MatchNotFoundError, MatchValidationError } from '../../src/app/errors.js'
+import {
+  MatchAlreadyVoidError,
+  MatchNotFoundError,
+  MatchValidationError,
+} from '../../src/app/errors.js'
 import { leaderboard } from '../../src/app/leaderboard.js'
 import { recordMatch } from '../../src/app/record-match.js'
 import type { Database } from '../../src/app/types.js'
 import { voidMatch } from '../../src/app/void-match.js'
+import { matchAdjustments } from '../../src/infra/db/schema.js'
 import { testDeps } from './helpers/deps.js'
 import { seedActiveConfig, seedPlayer, seedUser } from './helpers/factories.js'
 import { createTestDb, type TestDb } from './helpers/test-db.js'
@@ -47,6 +52,11 @@ async function record(home: string, away: string, homeScore: number, awayScore: 
     awayScore,
     recordedBy: userId,
   })
+}
+
+async function adjustmentCount(matchId: string): Promise<number> {
+  const rows = await db.select().from(matchAdjustments).where(eq(matchAdjustments.matchId, matchId))
+  return rows.length
 }
 
 describe('voidMatch', () => {
@@ -102,9 +112,53 @@ describe('voidMatch', () => {
       voidMatch(testDeps(db), { matchId: randomUUID(), reason: 'x', adjustedBy: userId }),
     ).rejects.toBeInstanceOf(MatchNotFoundError)
   })
+
+  it('rejects voiding an already-void match, appending nothing', async () => {
+    const { match } = await record(playerAId, playerBId, 1, 0)
+    await voidMatch(testDeps(db), { matchId: match.id, reason: 'first', adjustedBy: userId })
+
+    await expect(
+      voidMatch(testDeps(db), { matchId: match.id, reason: 'second', adjustedBy: userId }),
+    ).rejects.toBeInstanceOf(MatchAlreadyVoidError)
+    expect(await adjustmentCount(match.id)).toBe(1)
+  })
+
+  it('lets exactly one of two concurrent voids of the same match through', async () => {
+    const { match } = await record(playerAId, playerBId, 1, 0)
+
+    const results = await Promise.allSettled([
+      voidMatch(testDeps(db), { matchId: match.id, reason: 'tap 1', adjustedBy: userId }),
+      voidMatch(testDeps(db), { matchId: match.id, reason: 'tap 2', adjustedBy: userId }),
+    ])
+
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+    const rejected = results.filter((r) => r.status === 'rejected')
+    expect(rejected).toHaveLength(1)
+    expect(rejected[0]?.reason).toBeInstanceOf(MatchAlreadyVoidError)
+    expect(await adjustmentCount(match.id)).toBe(1)
+  })
 })
 
 describe('correctMatch', () => {
+  it('un-voids a voided match when it restates the result', async () => {
+    const { match } = await record(playerAId, playerBId, 2, 1)
+    await voidMatch(testDeps(db), { matchId: match.id, reason: 'mistake', adjustedBy: userId })
+
+    const result = await correctMatch(testDeps(db), {
+      matchId: match.id,
+      reason: 'restore',
+      homePlayerId: playerAId,
+      awayPlayerId: playerBId,
+      homeScore: 2,
+      awayScore: 1,
+      adjustedBy: userId,
+    })
+
+    expect(result.match).toMatchObject({ homeScore: 2, awayScore: 1, isVoid: false })
+    const { entries } = await leaderboard(testDeps(db), 'all-time')
+    expect(entries.find((e) => e.playerId === playerAId)).toMatchObject({ gamesPlayed: 1, wins: 1 })
+  })
+
   it('overlays the replacement score and replays downstream ratings', async () => {
     const { match } = await record(playerAId, playerBId, 1, 0)
 

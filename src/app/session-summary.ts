@@ -1,10 +1,8 @@
 import type { PlayerId } from '../domain/rating/types.js'
-import { effectiveMatchesForSession } from '../infra/db/queries/match-effective.js'
-import { snapshotsForMatches } from '../infra/db/queries/matches.js'
 import { getActiveRatingConfig } from '../infra/db/queries/rating-configs.js'
 import { findSessionById } from '../infra/db/queries/sessions.js'
 import { SessionNotFoundError } from './errors.js'
-import { outcomesByMatchId } from './reconstruct-outcome.js'
+import { replaySession } from './session-replay.js'
 import type { Deps } from './types.js'
 
 export interface PlayerSessionDelta {
@@ -24,30 +22,22 @@ export interface SessionSummaryResult {
 }
 
 /**
- * Deltas/upsets are computed against the *current* active config, from the matches actually
- * played in this session — not stored per session, so they reflect any later void/correct/
- * rebuild automatically, same as the leaderboard.
+ * Deltas/upsets come from the session's own ladder (replaySession, under the active config) — the
+ * same ratings its leaderboard shows, so a player's delta is their session rating minus baseline.
+ * Nothing is stored per session, so a later void/correct or config change is reflected
+ * automatically.
  */
 export async function sessionSummary(deps: Deps, sessionId: string): Promise<SessionSummaryResult> {
   const session = await findSessionById(deps.db, sessionId)
   if (session === undefined) throw new SessionNotFoundError(sessionId)
 
-  const { id: configId, config } = await getActiveRatingConfig(deps.db)
-  const matches = await effectiveMatchesForSession(deps.db, sessionId)
-  const snapshots = await snapshotsForMatches(
-    deps.db,
-    configId,
-    matches.map((match) => match.id),
-  )
-
-  // A match this session might not have snapshots under the *current* config if the config
-  // changed since — outcomesByMatchId skips it rather than guessing.
-  const outcomes = outcomesByMatchId(matches, snapshots, config.params.provisionalGames)
+  const { config } = await getActiveRatingConfig(deps.db)
+  const { matches, outcomes } = await replaySession(deps.db, sessionId, config)
 
   const deltaByPlayer = new Map<PlayerId, number>()
   let upsetCount = 0
 
-  for (const outcome of outcomes.values()) {
+  for (const outcome of outcomes) {
     if (outcome.upset) upsetCount += 1
     deltaByPlayer.set(
       outcome.home.playerId,

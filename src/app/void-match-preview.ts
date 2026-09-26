@@ -1,11 +1,10 @@
 import { toMatchInputs } from '../domain/match/result.js'
 import { replay } from '../domain/rating/engine.js'
 import type { PlayerId } from '../domain/rating/types.js'
-import { allEffectiveMatches } from '../infra/db/queries/match-effective.js'
-import { findMatchById } from '../infra/db/queries/matches.js'
+import { allEffectiveMatches, effectiveMatchById } from '../infra/db/queries/match-effective.js'
 import { getActiveRatingConfig } from '../infra/db/queries/rating-configs.js'
 import { activePlayerRatings, allLatestSnapshots } from '../infra/db/queries/ratings.js'
-import { MatchNotFoundError } from './errors.js'
+import { MatchAlreadyVoidError, MatchNotFoundError } from './errors.js'
 import { diffAffectedPlayers, diffRanks, type RankChange } from './replay.js'
 import type { Deps } from './types.js'
 
@@ -30,8 +29,9 @@ export interface VoidMatchPreviewResult {
  * from the effective log fed to replay(), rather than by inserting a real adjustment row.
  */
 export async function previewVoidMatch(deps: Deps, matchId: string): Promise<VoidMatchPreviewResult> {
-  const existing = await findMatchById(deps.db, matchId)
+  const existing = await effectiveMatchById(deps.db, matchId)
   if (existing === undefined) throw new MatchNotFoundError(matchId)
+  if (existing.isVoid) throw new MatchAlreadyVoidError(matchId)
 
   const { id: configId, config } = await getActiveRatingConfig(deps.db)
 

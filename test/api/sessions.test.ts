@@ -153,3 +153,76 @@ describe('GET /sessions', () => {
     await app.close()
   })
 })
+
+describe('PATCH /sessions/:id', () => {
+  it('renames an open session, and a closed one', async () => {
+    const app = buildTestApp(db)
+    const opened = await app.inject({
+      method: 'POST',
+      url: '/sessions',
+      cookies,
+      payload: { name: 'Ongoing' },
+    })
+    const id = opened.json<{ id: string }>().id
+
+    const renamedOpen = await app.inject({
+      method: 'PATCH',
+      url: `/sessions/${id}`,
+      cookies,
+      payload: { name: 'FC 26 (live)' },
+    })
+    expect(renamedOpen.statusCode).toBe(200)
+    expect(renamedOpen.json()).toMatchObject({ id, name: 'FC 26 (live)', endedAt: null })
+
+    await app.inject({ method: 'POST', url: `/sessions/${id}/close`, cookies })
+    const renamedClosed = await app.inject({
+      method: 'PATCH',
+      url: `/sessions/${id}`,
+      cookies,
+      payload: { name: 'FC 26' },
+    })
+    expect(renamedClosed.statusCode).toBe(200)
+    expect(renamedClosed.json()).toMatchObject({ id, name: 'FC 26' })
+
+    const summary = await app.inject({ method: 'GET', url: `/sessions/${id}` })
+    expect(summary.json()).toMatchObject({ name: 'FC 26' })
+
+    await app.close()
+  })
+
+  it('returns 404 for an unknown id, 400 for an empty name, and 401 without a login', async () => {
+    const app = buildTestApp(db)
+    const opened = await app.inject({
+      method: 'POST',
+      url: '/sessions',
+      cookies,
+      payload: { name: 'Ongoing' },
+    })
+    const id = opened.json<{ id: string }>().id
+
+    const missing = await app.inject({
+      method: 'PATCH',
+      url: '/sessions/00000000-0000-7000-8000-000000000000',
+      cookies,
+      payload: { name: 'FC 26' },
+    })
+    expect(missing.statusCode).toBe(404)
+
+    const empty = await app.inject({
+      method: 'PATCH',
+      url: `/sessions/${id}`,
+      cookies,
+      payload: { name: '' },
+    })
+    expect(empty.statusCode).toBe(400)
+
+    const anonymous = await app.inject({
+      method: 'PATCH',
+      url: `/sessions/${id}`,
+      payload: { name: 'FC 26' },
+    })
+    expect(anonymous.statusCode).toBe(401)
+
+    await app.close()
+  })
+})

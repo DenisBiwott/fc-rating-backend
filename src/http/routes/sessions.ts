@@ -5,12 +5,14 @@ import { closeSession } from '../../app/close-session.js'
 import { currentSession } from '../../app/current-session.js'
 import { listSessions } from '../../app/list-sessions.js'
 import { openSession } from '../../app/open-session.js'
+import { renameSession } from '../../app/rename-session.js'
 import { sessionSummary, type SessionSummaryResult } from '../../app/session-summary.js'
 import type { Deps } from '../../app/types.js'
 import type { SessionRow } from '../../infra/db/queries/sessions.js'
 import { requireRole, sessionUserOrThrow } from '../plugins/auth.js'
 import {
   openSessionBodySchema,
+  renameSessionBodySchema,
   sessionListResponseSchema,
   sessionParamsSchema,
   sessionSchema,
@@ -108,6 +110,26 @@ export function registerSessionRoutes(app: FastifyInstance, deps: Deps): void {
       },
     },
     async (request) => toSessionSummaryDto(await sessionSummary(deps, request.params.id)),
+  )
+
+  typed.patch(
+    '/sessions/:id',
+    {
+      preHandler: requireRole('recorder'),
+      schema: {
+        tags: ['sessions'],
+        operationId: 'renameSession',
+        summary: 'Rename a session (requires recorder role)',
+        security: [{ sessionCookie: [] }],
+        params: sessionParamsSchema,
+        body: renameSessionBodySchema,
+        response: { 200: sessionSchema },
+      },
+    },
+    async (request) =>
+      toSessionDto(
+        await renameSession(deps, { sessionId: request.params.id, name: request.body.name }),
+      ),
   )
 
   typed.post(

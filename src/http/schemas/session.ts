@@ -14,6 +14,8 @@ export const sessionListResponseSchema = z.array(sessionSchema)
 
 export const openSessionBodySchema = z.object({ name: z.string().min(1) })
 
+export const renameSessionBodySchema = z.object({ name: z.string().min(1) })
+
 const playerSessionDeltaSchema = z.object({ playerId: z.string(), delta: z.number() })
 
 export const sessionSummaryResponseSchema = z.object({

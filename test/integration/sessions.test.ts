@@ -7,6 +7,7 @@ import {
   SessionAlreadyOpenError,
   SessionNotFoundError,
 } from '../../src/app/errors.js'
+import { leaderboard } from '../../src/app/leaderboard.js'
 import { openSession } from '../../src/app/open-session.js'
 import { recordMatch } from '../../src/app/record-match.js'
 import { sessionSummary } from '../../src/app/session-summary.js'
@@ -122,8 +123,8 @@ describe('sessionSummary', () => {
   it('flags an upset when the pre-match underdog wins', async () => {
     const session = await openSession(testDeps(db), { name: 'Friday Night', createdBy: userId })
 
-    // Get A well ahead of B first (outside the session, so it doesn't affect matchCount), then
-    // have the now-underdog B beat A inside the session.
+    // Get A well ahead of B within the session (the first of these is level, so no upset), then
+    // have the now-underdog B beat A.
     for (let i = 0; i < 5; i += 1) {
       await recordMatch(testDeps(db), {
         id: randomUUID(),
@@ -132,6 +133,7 @@ describe('sessionSummary', () => {
         homeScore: 1,
         awayScore: 0,
         recordedBy: userId,
+        sessionId: session.id,
       })
     }
 
@@ -146,8 +148,71 @@ describe('sessionSummary', () => {
     })
 
     const summary = await sessionSummary(testDeps(db), session.id)
-    expect(summary.matchCount).toBe(1)
+    expect(summary.matchCount).toBe(6)
     expect(summary.upsetCount).toBe(1)
+  })
+
+  it("reads the session's own ladder: an all-time upset isn't one when both start level", async () => {
+    // A is well ahead of B all-time, but the session starts both at baseline.
+    for (let i = 0; i < 5; i += 1) {
+      await recordMatch(testDeps(db), {
+        id: randomUUID(),
+        homePlayerId: playerAId,
+        awayPlayerId: playerCId,
+        homeScore: 1,
+        awayScore: 0,
+        recordedBy: userId,
+      })
+    }
+    const session = await openSession(testDeps(db), { name: 'FC 27', createdBy: userId })
+    await recordMatch(testDeps(db), {
+      id: randomUUID(),
+      homePlayerId: playerBId,
+      awayPlayerId: playerAId,
+      homeScore: 1,
+      awayScore: 0,
+      recordedBy: userId,
+      sessionId: session.id,
+    })
+
+    const summary = await sessionSummary(testDeps(db), session.id)
+    expect(summary.upsetCount).toBe(0)
+    // One provisional-K result from level: ±40 × 0.5.
+    expect(summary.playerDeltas).toEqual(
+      expect.arrayContaining([
+        { playerId: playerBId, delta: 20 },
+        { playerId: playerAId, delta: -20 },
+      ]),
+    )
+  })
+
+  it("gives each player their session-table rating minus baseline as their delta", async () => {
+    const session = await openSession(testDeps(db), { name: 'FC 27', createdBy: userId })
+    const results: [string, string, number, number][] = [
+      [playerAId, playerBId, 3, 1],
+      [playerBId, playerCId, 0, 2],
+      [playerCId, playerAId, 1, 1],
+      [playerAId, playerCId, 2, 0],
+    ]
+    for (const [home, away, homeScore, awayScore] of results) {
+      await recordMatch(testDeps(db), {
+        id: randomUUID(),
+        homePlayerId: home,
+        awayPlayerId: away,
+        homeScore,
+        awayScore,
+        recordedBy: userId,
+        sessionId: session.id,
+      })
+    }
+
+    const summary = await sessionSummary(testDeps(db), session.id)
+    const { entries } = await leaderboard(testDeps(db), { sessionId: session.id })
+    for (const { playerId, delta } of summary.playerDeltas) {
+      const rating = entries.find((e) => e.playerId === playerId)?.rating ?? NaN
+      expect(delta).toBeCloseTo(rating - 1200, 9)
+    }
+    expect(summary.playerDeltas).toHaveLength(3)
   })
 
   it('excludes matches recorded outside the session', async () => {

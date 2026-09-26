@@ -9,7 +9,7 @@ import {
 } from '../src/http/schemas/match.js'
 import { createPlayerBodySchema, updatePlayerBodySchema } from '../src/http/schemas/player.js'
 import { createRatingConfigBodySchema } from '../src/http/schemas/rating-config.js'
-import { openSessionBodySchema } from '../src/http/schemas/session.js'
+import { openSessionBodySchema, renameSessionBodySchema } from '../src/http/schemas/session.js'
 
 /**
  * Generates the Postman collection (and a local + production environment) from the committed
@@ -125,6 +125,7 @@ const BODIES: Record<string, { schema: z.ZodType; example: unknown }> = {
     },
   },
   openSession: { schema: openSessionBodySchema, example: { name: 'Friday night' } },
+  renameSession: { schema: renameSessionBodySchema, example: { name: 'FC 26' } },
   createRatingConfig: { schema: createRatingConfigBodySchema, example: RECOMMENDED_CONFIG },
 }
 
@@ -154,6 +155,11 @@ const NOTES: Record<string, string> = {
     'it with any entry of `scripts/rating-config-candidates.json`. Check the response echoes ' +
     'every feature. Adopting it: docs/RATING_CONFIGS.md.',
   rebuildRatingConfig: 'Uses `{{configId}}`, captured by "Create a rating config".',
+  getLeaderboard:
+    'Without `session`: the open session\'s table (else the most recently closed one; all-time if ' +
+    'no session exists). Set `session` to `all-time`, or to a session id such as `{{sessionId}}`.',
+  renameSession:
+    'Uses `{{sessionId}}`, captured by "Open a new session". Works on closed sessions too.',
 }
 
 // --- Postman collection v2.1 building blocks -------------------------------------------------------

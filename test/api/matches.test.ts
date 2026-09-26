@@ -357,3 +357,44 @@ describe('POST /matches/:id/correct', () => {
     await app.close()
   })
 })
+
+describe('voiding an already-void match', () => {
+  it('returns 409 from both the void and its preview', async () => {
+    const app = buildTestApp(db)
+    const matchId = randomUUID()
+    await app.inject({
+      method: 'POST',
+      url: '/matches',
+      cookies,
+      payload: { id: matchId, homePlayerId: playerAId, awayPlayerId: playerBId, homeScore: 1, awayScore: 0 },
+    })
+    const first = await app.inject({
+      method: 'POST',
+      url: `/matches/${matchId}/void`,
+      cookies,
+      payload: { reason: 'Recorded in error' },
+    })
+    expect(first.statusCode).toBe(200)
+
+    const again = await app.inject({
+      method: 'POST',
+      url: `/matches/${matchId}/void`,
+      cookies,
+      payload: { reason: 'Recorded in error' },
+    })
+    expect(again.statusCode).toBe(409)
+    expect(again.json()).toMatchObject({ type: 'conflict' })
+
+    const preview = await app.inject({
+      method: 'GET',
+      url: `/matches/${matchId}/void-preview`,
+      cookies,
+    })
+    expect(preview.statusCode).toBe(409)
+
+    const detail = await app.inject({ method: 'GET', url: `/matches/${matchId}` })
+    expect(detail.json<{ adjustments: unknown[] }>().adjustments).toHaveLength(1)
+
+    await app.close()
+  })
+})

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { MatchNotFoundError } from '../../src/app/errors.js'
+import { MatchAlreadyVoidError, MatchNotFoundError } from '../../src/app/errors.js'
 import { leaderboard } from '../../src/app/leaderboard.js'
 import { recordMatch } from '../../src/app/record-match.js'
 import type { Database } from '../../src/app/types.js'
@@ -122,6 +122,15 @@ describe('previewVoidMatch', () => {
   it('throws MatchNotFoundError for an unknown match id', async () => {
     await expect(previewVoidMatch(testDeps(db), randomUUID())).rejects.toBeInstanceOf(
       MatchNotFoundError,
+    )
+  })
+
+  it('throws MatchAlreadyVoidError for an already-void match', async () => {
+    const { match } = await record(playerAId, playerBId, 1, 0)
+    await voidMatch(testDeps(db), { matchId: match.id, reason: 'x', adjustedBy: userId })
+
+    await expect(previewVoidMatch(testDeps(db), match.id)).rejects.toBeInstanceOf(
+      MatchAlreadyVoidError,
     )
   })
 })
